@@ -67,7 +67,17 @@ import java_cup.runtime.*;
 ":" {return symbol(Sym.COLON);}
 ";" {return symbol(Sym.SEMIC);}
 
-(a-z|A-Z|_)(a-z|0-9|_)* {return symbol(Sym.IDENT);}
-(0-9)* {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
+\/\/.* {} //Comment
+[\n\ \t\r\f]+ {} //Whitespace
+
+[_|(a-z)|(A-z)][(a-z)|(A-Z)|(0-9)|_]* {return symbol(Sym.IDENT);}
+[0-9]+ {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
+0x[(0-9)|(a-f)|(A-F)]+ {return symbol(Sym.INTLIT, Integer.valueOf(yytext().substring(2), 16));} //Hexadec. Value (Cuts off first 2 chars because its 0x
+'.' {return symbol(Sym.INTLIT, new Integer(yytext().charAt(1)));} //Char-Values
+
+\\n {return symbol(Sym.INTLIT, new Integer('\n'));}
+
+<<EOF>> {return symbol(Sym.EOF);}
+
 
 [^]		{throw SplError.LexicalError(new Position(yyline + 1, yycolumn + 1), yytext().charAt(0));}
