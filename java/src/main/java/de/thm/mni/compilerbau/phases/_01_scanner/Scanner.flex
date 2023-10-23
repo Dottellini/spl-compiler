@@ -67,7 +67,7 @@ import java_cup.runtime.*;
 ":" {return symbol(Sym.COLON);}
 ";" {return symbol(Sym.SEMIC);}
 
-"" {return symbol(Sym.IDENT);}
-"/[0-9]*/" {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
+(a-z|A-Z|_)(a-z|0-9|_)* {return symbol(Sym.IDENT);}
+(0-9)* {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
 
 [^]		{throw SplError.LexicalError(new Position(yyline + 1, yycolumn + 1), yytext().charAt(0));}
