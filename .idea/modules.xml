@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/java/spl.iml" filepath="$PROJECT_DIR$/java/spl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/java/spl (1).iml" filepath="$PROJECT_DIR$/java/spl (1).iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/spl-compiler-skeleton.iml" filepath="$PROJECT_DIR$/.idea/spl-compiler-skeleton.iml" />
     </modules>
   </component>
