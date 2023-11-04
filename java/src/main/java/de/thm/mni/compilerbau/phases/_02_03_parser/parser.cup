@@ -56,8 +56,14 @@ terminal Integer INTLIT;      //Integer literals
 
 /* Non-terminals */
 non terminal Program program;
-non terminal List<GlobalDefinition> GlobalDefinitionList;
+non terminal GlobalDefinitions;
+non terminal variableDec, whileStatement, expression, statement;
 
 start with program;
 
-program ::= GlobalDefinitionList; //TODO (assignment 2 and 3): Just a dummy, needs to be replaced by the actual spl grammar.
+program ::= GlobalDefinitions; //TODO (assignment 2 and 3): Just a dummy, needs to be replaced by the actual spl grammar.
+
+expression ::= ;
+
+variableDec ::= TYPE IDENT ASGN type SEMIC;
+whileStatement ::= WHILE LPAREN expression RPAREN statement;
