@@ -57,13 +57,36 @@ terminal Integer INTLIT;      //Integer literals
 /* Non-terminals */
 non terminal Program program;
 non terminal GlobalDefinitions;
-non terminal variableDec, whileStatement, expression, statement;
+non terminal typeDec, typeArrayDec, procDec, procParameterList, procParameter, procStatementBlock, varDecList, varDec, procStatementList, procStatement;
+
+precedence left LT, LE, GT, GE, EQ, NE;
+precedence left PLUS, MINUS;
+precedence left STAR, SLASH;
+precedence right ASGN;
 
 start with program;
 
-program ::= GlobalDefinitions; //TODO (assignment 2 and 3): Just a dummy, needs to be replaced by the actual spl grammar.
+program ::= GlobalDefinitions;
 
-expression ::= ;
+GlobalDefinitions ::= typeDec GlobalDefinitions | procDec GlobalDefinitions | /* leer */;
 
-variableDec ::= TYPE IDENT ASGN type SEMIC;
-whileStatement ::= WHILE LPAREN expression RPAREN statement;
+typeDec ::= TYPE IDENT EQ typeArrayDec SEMIC
+                | TYPE IDENT EQ IDENT SEMIC;
+typeArrayDec ::= ARRAY LBRACK INTLIT RBRACK OF typeArrayDec
+                | ARRAY LBRACK INTLIT RBRACK OF IDENT;
+
+procDec ::= PROC IDENT LPAREN procParameterListOrEmpty RPAREN LCURL procStatementBlock RCURL;
+procParameterListOrEmpty ::= procParameterList | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
+procParameterList ::= procParameter | procParameter COMMA procParameterList;
+procParameter ::= IDENT COLON IDENT | REF IDENT COLON IDENT;
+
+procStatementBlock ::= varDecList procStatement;
+
+varDecList ::= varDec | /* leer */;
+varDec ::= VAR IDENT COLON typeArrayDec SEMIC | VAR IDENT COLON IDENT SEMIC;
+
+procStatementList ::= procStatement | /* leer */;
+procStatement ::= whileLoop | ifStatement | blockBody | varAssignment | procCall | SEMIC;
+
+//Erstelle whileLoop, ifStatement, blockBody, varAssignment, procCall
+//Bis anweisungen gekommen
