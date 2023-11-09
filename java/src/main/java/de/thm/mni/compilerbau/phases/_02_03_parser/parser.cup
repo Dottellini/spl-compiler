@@ -57,7 +57,13 @@ terminal Integer INTLIT;      //Integer literals
 /* Non-terminals */
 non terminal Program program;
 non terminal GlobalDefinitions;
-non terminal typeDec, typeArrayDec, procDec, procParameterList, procParameter, procStatementBlock, varDecList, varDec, procStatementList, procStatement;
+non terminal typeDec, typeArrayDec;
+non terminal procDec, procParameterList, procParameterListOrEmpty, procParameter, procInstructionBlock, procInstructionList, procInstruction;
+non terminal varDecList, varDec;
+non terminal varName, varNameForMultiDimArray, varAssignment, ifStatement, whileLoop, blockStatement, procCall;
+non terminal procParameterCallListOrEmpty, procParameterCall;
+non terminal expression, comparisonOperation, comparisonOperators;
+non terminal punktCalculation, strichCalculation, negationParenCalc, parenCalculation, calculationValue;
 
 precedence left LT, LE, GT, GE, EQ, NE;
 precedence left PLUS, MINUS;
@@ -75,18 +81,50 @@ typeDec ::= TYPE IDENT EQ typeArrayDec SEMIC
 typeArrayDec ::= ARRAY LBRACK INTLIT RBRACK OF typeArrayDec
                 | ARRAY LBRACK INTLIT RBRACK OF IDENT;
 
-procDec ::= PROC IDENT LPAREN procParameterListOrEmpty RPAREN LCURL procStatementBlock RCURL;
+procDec ::= PROC IDENT LPAREN procParameterListOrEmpty RPAREN LCURL procInstructionBlock RCURL;
 procParameterListOrEmpty ::= procParameterList | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
 procParameterList ::= procParameter | procParameter COMMA procParameterList;
 procParameter ::= IDENT COLON IDENT | REF IDENT COLON IDENT;
 
-procStatementBlock ::= varDecList procStatement;
+procInstructionBlock ::= varDecList procInstructionList;
 
-varDecList ::= varDec | /* leer */;
+varDecList ::= varDec varDecList | /* leer */;
 varDec ::= VAR IDENT COLON typeArrayDec SEMIC | VAR IDENT COLON IDENT SEMIC;
 
-procStatementList ::= procStatement | /* leer */;
-procStatement ::= whileLoop | ifStatement | blockBody | varAssignment | procCall | SEMIC;
+procInstructionList ::= procInstruction procInstructionList | /* leer */;
+procInstruction ::= varAssignment | ifStatement | whileLoop | blockStatement | procCall | SEMIC;
 
 //Erstelle whileLoop, ifStatement, blockBody, varAssignment, procCall
-//Bis anweisungen gekommen
+varAssignment ::= varName ASGN expression SEMIC;
+varName ::= IDENT | varNameForMultiDimArray LBRACK expression RBRACK;
+varNameForMultiDimArray ::= IDENT | varNameForMultiDimArray LBRACK expression RBRACK; //Wird benötigt für multi dimensionale Arrays
+
+ifStatement ::= IF LPAREN comparisonOperation RPAREN procInstruction ELSE procInstruction
+                | IF LPAREN comparisonOperation RPAREN procInstruction;
+
+whileLoop ::= WHILE LPAREN comparisonOperation RPAREN procInstruction;
+
+blockStatement ::= LCURL procInstructionList RCURL;
+
+procCall ::= IDENT LPAREN procParameterCallListOrEmpty RPAREN SEMIC;
+procParameterCallListOrEmpty ::= procParameterCall | /* leer */;
+procParameterCall ::= expression | expression COMMA procParameterCall;
+
+comparisonOperation ::= expression comparisonOperators expression;
+comparisonOperators ::= LT | LE | EQ | NE | GT | GE;
+
+expression ::= strichCalculation ;
+
+strichCalculation ::= strichCalculation PLUS punktCalculation
+                    | strichCalculation MINUS punktCalculation
+                    | punktCalculation;
+
+punktCalculation ::= punktCalculation STAR negationParenCalc
+                   | punktCalculation SLASH negationParenCalc;
+
+negationParenCalc ::= MINUS | parenCalculation;
+
+parenCalculation ::= LPAREN expression RPAREN | calculationValue;
+
+calculationValue ::= varName | INTLIT;
+

@@ -1,1 +1,13 @@
-()[]proc 214 0x123 'a'
+proc main() {
+  var n: int;
+  var m: int;
+
+  //readi(n);
+  n := 10;
+  fak1(n, m);
+  printi(m);
+  printc('\n');
+  fak2(n, m);
+  printi(m);
+  printc('\n');
+}
