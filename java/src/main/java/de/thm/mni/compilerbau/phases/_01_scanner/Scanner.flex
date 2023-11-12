@@ -35,47 +35,48 @@ import java_cup.runtime.*;
 
 // TODO (assignment 1): The regular expressions for all tokens need to be defined here.
 
-"[" {return symbol(Sym.LBRACK);}
-"]" {return symbol(Sym.RBRACK);}
-"(" {return symbol(Sym.LPAREN);}
-")" {return symbol(Sym.RPAREN);}
-"{" {return symbol(Sym.LCURL);}
-"}" {return symbol(Sym.RCURL);}
+\[ {return symbol(Sym.LBRACK);}
+\] {return symbol(Sym.RBRACK);}
+\( {return symbol(Sym.LPAREN);}
+\) {return symbol(Sym.RPAREN);}
+\{ {return symbol(Sym.LCURL);}
+\} {return symbol(Sym.RCURL);}
 
-"else" {return symbol(Sym.ELSE);}
-"while" {return symbol(Sym.WHILE);}
-"ref" {return symbol(Sym.REF);}
-"if" {return symbol(Sym.IF);}
-"of" {return symbol(Sym.OF);}
-"type" {return symbol(Sym.TYPE);}
-"proc" {return symbol(Sym.PROC);}
-"array" {return symbol(Sym.ARRAY);}
-"var" {return symbol(Sym.VAR);}
+else {return symbol(Sym.ELSE);}
+while {return symbol(Sym.WHILE);}
+ref {return symbol(Sym.REF);}
+if {return symbol(Sym.IF);}
+of {return symbol(Sym.OF);}
+type {return symbol(Sym.TYPE);}
+proc {return symbol(Sym.PROC);}
+array {return symbol(Sym.ARRAY);}
+var {return symbol(Sym.VAR);}
 
-"<" {return symbol(Sym.LT);}
-"#" {return symbol(Sym.NE);}
-":=" {return symbol(Sym.ASGN);}
-"+" {return symbol(Sym.PLUS);}
-"/" {return symbol(Sym.SLASH);}
-"*" {return symbol(Sym.STAR);}
-">" {return symbol(Sym.GT);}
-"<=" {return symbol(Sym.LE);}
-"-" {return symbol(Sym.MINUS);}
-">=" {return symbol(Sym.GE);}
-"=" {return symbol(Sym.EQ);}
+\< {return symbol(Sym.LT);}
+\# {return symbol(Sym.NE);}
+\:\= {return symbol(Sym.ASGN);}
+\+ {return symbol(Sym.PLUS);}
+\/ {return symbol(Sym.SLASH);}
+\* {return symbol(Sym.STAR);}
+\> {return symbol(Sym.GT);}
+\<\= {return symbol(Sym.LE);}
+\- {return symbol(Sym.MINUS);}
+\>\= {return symbol(Sym.GE);}
+\= {return symbol(Sym.EQ);}
 
-":" {return symbol(Sym.COLON);}
-";" {return symbol(Sym.SEMIC);}
+: {return symbol(Sym.COLON);}
+; {return symbol(Sym.SEMIC);}
+, {return symbol(Sym.COMMA);}
 
 \/\/.* {} //Comment
 [\n\ \t\r\f]+ {} //Whitespace
 
-[_|(a-z)|(A-z)][(a-z)|(A-Z)|(0-9)|_]* {return symbol(Sym.IDENT);}
+[A-Za-z_]([A-Za-z0-9_])* {return symbol(Sym.IDENT, yytext());}
 [0-9]+ {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
-0x[(0-9)|(a-f)|(A-F)]+ {return symbol(Sym.INTLIT, Integer.valueOf(yytext().substring(2), 16));} //Hexadec. Value (Cuts off first 2 chars because its 0x
-'.' {return symbol(Sym.INTLIT, new Integer(yytext().charAt(1)));} //Char-Values
+0x([0-9a-fA-F])+ {return symbol(Sym.INTLIT, Integer.valueOf(yytext().substring(2), 16));} //Hexadec. Value (Cuts off first 2 chars because its 0x
+\'.\' {return symbol(Sym.INTLIT, new Integer(yytext().charAt(1)));} //Char-Values
 
-\\n {return symbol(Sym.INTLIT, new Integer('\n'));}
+\'\\n\' {return symbol(Sym.INTLIT, new Integer('\n'));}
 
 <<EOF>> {return symbol(Sym.EOF);}
 

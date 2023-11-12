@@ -61,7 +61,7 @@ non terminal GlobalDefinition globalDefinition;
 non terminal typeDec, typeArrayDec;
 non terminal procDec, procParameterList, procParameterListOrEmpty, procParameter, procInstructionBlock, procInstructionList, procInstruction;
 non terminal varDecList, varDec;
-non terminal varName, varNameForMultiDimArray, varAssignment, ifStatement, whileLoop, blockStatement, procCall;
+non terminal varName, varNameForMultiDimArray, varAssignment, ifStatement, whileLoop, blockStatement, procCall, ifFollower;
 non terminal procParameterCallListOrEmpty, procParameterCall;
 non terminal expression, comparisonOperation, comparisonOperators;
 non terminal punktCalculation, strichCalculation, negationParenCalc, parenCalculation, calculationValue;
@@ -115,14 +115,15 @@ procParameterCall ::= expression | expression COMMA procParameterCall;
 comparisonOperation ::= expression comparisonOperators expression;
 comparisonOperators ::= LT | LE | EQ | NE | GT | GE;
 
-expression ::= strichCalculation ;
+expression ::= strichCalculation;
 
 strichCalculation ::= strichCalculation PLUS punktCalculation
                     | strichCalculation MINUS punktCalculation
                     | punktCalculation;
 
 punktCalculation ::= punktCalculation STAR negationParenCalc
-                   | punktCalculation SLASH negationParenCalc;
+                   | punktCalculation SLASH negationParenCalc
+                   | negationParenCalc;
 
 negationParenCalc ::= MINUS parenCalculation | parenCalculation;
 
