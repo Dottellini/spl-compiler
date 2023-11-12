@@ -56,7 +56,8 @@ terminal Integer INTLIT;      //Integer literals
 
 /* Non-terminals */
 non terminal Program program;
-non terminal GlobalDefinitions;
+non terminal List<GlobalDefinition> globalDefinitionsList;
+non terminal GlobalDefinition globalDefinition;
 non terminal typeDec, typeArrayDec;
 non terminal procDec, procParameterList, procParameterListOrEmpty, procParameter, procInstructionBlock, procInstructionList, procInstruction;
 non terminal varDecList, varDec;
@@ -72,9 +73,10 @@ precedence right ASGN;
 
 start with program;
 
-program ::= GlobalDefinitions;
+program ::= globalDefinitionsList;
 
-GlobalDefinitions ::= typeDec GlobalDefinitions | procDec GlobalDefinitions | /* leer */;
+globalDefinitionsList ::= globalDefinition globalDefinitionsList | /* leer */; //typeDec GlobalDefinitions | procDec GlobalDefinitions | /* leer */;
+globalDefinition ::= typeDec | procDec;
 
 typeDec ::= TYPE IDENT EQ typeArrayDec SEMIC
                 | TYPE IDENT EQ IDENT SEMIC;
@@ -122,7 +124,7 @@ strichCalculation ::= strichCalculation PLUS punktCalculation
 punktCalculation ::= punktCalculation STAR negationParenCalc
                    | punktCalculation SLASH negationParenCalc;
 
-negationParenCalc ::= MINUS | parenCalculation;
+negationParenCalc ::= MINUS parenCalculation | parenCalculation;
 
 parenCalculation ::= LPAREN expression RPAREN | calculationValue;
 

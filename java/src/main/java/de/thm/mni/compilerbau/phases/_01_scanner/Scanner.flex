@@ -62,7 +62,7 @@ import java_cup.runtime.*;
 "<=" {return symbol(Sym.LE);}
 "-" {return symbol(Sym.MINUS);}
 ">=" {return symbol(Sym.GE);}
-"==" {return symbol(Sym.EQ);}
+"=" {return symbol(Sym.EQ);}
 
 ":" {return symbol(Sym.COLON);}
 ";" {return symbol(Sym.SEMIC);}

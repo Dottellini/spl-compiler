@@ -1,13 +1,3 @@
-proc main() {
-  var n: int;
-  var m: int;
+type a = int;
 
-  //readi(n);
-  n := 10;
-  fak1(n, m);
-  printi(m);
-  printc('\n');
-  fak2(n, m);
-  printi(m);
-  printc('\n');
-}
+proc main() {}
