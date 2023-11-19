@@ -12,6 +12,10 @@ import de.thm.mni.compilerbau.absyn.*;
  */
 public class DoNothingVisitor implements Visitor {
     @Override
+    public void visit(ListNode listNode) {
+    }
+
+    @Override
     public void visit(ArrayAccess arrayAccess) {
     }
 

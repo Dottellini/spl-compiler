@@ -75,10 +75,10 @@ precedence right ASGN;
 
 start with program;
 
-program ::= globalDefinitionsList;
+program ::= globalDefinitionsList:this {:RESULT = this;:};
 
-globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = new GlobalDefinition(new Position(defleft, defright), list); :} //TODO: zur liste machen (z.B. LinkedList implementieren
-                            | /* leer */ {:RESULT = new GlobalDefinition();:};
+globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = list.add(new GlobalDefinition(new Position(defleft, defright), def)); :} //TODO: idk ob das geht mit der Liste, vielleicht wie unten machen?
+                            | /* leer */ {:RESULT = list.add(new GlobalDefinition());:};
 globalDefinition ::= typeDec:typeDec {:RESULT = typeDec;:}| procDec:procDec {:RESULT = procDec;:};
 
 typeDec ::= TYPE IDENT:name EQ:op typeArrayDec:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), name, type);:}
@@ -86,11 +86,15 @@ typeDec ::= TYPE IDENT:name EQ:op typeArrayDec:type SEMIC {:RESULT = new TypeDef
 typeArrayDec ::= ARRAY LBRACK INTLIT:size RBRACK OF typeArrayDec:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), size, type);:}
                 | ARRAY LBRACK INTLIT:size RBRACK OF IDENT:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), new NamedTypeExpression(new Position(typeleft, typeright), type));:};
 
-procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:procs RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), name, vars, procs);:};
-procParameterListOrEmpty ::= procParameterList:list {:RESULT = new List<ParameterDefinition>().add(list);:} //TODO Ka ob das so stimmt
+procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:procs RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), name, params, vars, procs);:};
+////////////TODO Ka ob das so stimmt mit der Liste, muss maybe eine ListClass eingeführt werden
+procParameterListOrEmpty ::= procParameterList:plist {:RESULT = new ArrayList<ParameterDefinition>().addAll(plist);:}
                             | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
-procParameterList ::= procParameter | procParameter COMMA procParameterList;
-procParameter ::= IDENT COLON IDENT | REF IDENT COLON IDENT;
+procParameterList ::= procParameter:param {:RESULT = param;:}
+                    | procParameter:param COMMA procParameterList:list {:RESULT = list.add(param);:};
+///////////
+procParameter ::= IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), name, new NamedTypeExpression(new Position(typeleft, typeright), type), false);:}
+                    | REF IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), name, new NamedTypeExpression(new Position(typeleft, typeright), type), true);:};
 
 varDecList ::= varDec varDecList | /* leer */;
 varDec ::= VAR IDENT COLON typeArrayDec SEMIC | VAR IDENT COLON IDENT SEMIC;

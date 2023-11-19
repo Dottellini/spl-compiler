@@ -8,6 +8,7 @@ import de.thm.mni.compilerbau.absyn.*;
  * You have to extend this class to implement your own visitor behavior.
  */
 public interface Visitor {
+    void visit(ListNode listNode);
     void visit(ArrayAccess arrayAccess);
 
     void visit(ArrayTypeExpression arrayTypeExpression);
