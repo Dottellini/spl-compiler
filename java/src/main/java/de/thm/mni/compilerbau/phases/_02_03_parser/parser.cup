@@ -58,8 +58,10 @@ terminal Integer INTLIT;      //Integer literals
 non terminal Program program;
 non terminal List<GlobalDefinition> globalDefinitionsList;
 non terminal GlobalDefinition globalDefinition;
-non terminal typeDec, typeArrayDec;
-non terminal procDec, procParameterList, procParameterListOrEmpty, procParameter, procInstructionBlock, procInstructionList, procInstruction;
+non terminal TypeDefinition typeDec;
+non terminal ArrayTypeExpression typeArrayDec;
+non terminal ProcedureDefinition procDec; //Bis hier
+non terminal procParameterList, procParameterListOrEmpty, procParameter, procInstructionList, procInstruction;
 non terminal varDecList, varDec;
 non terminal varName, varNameForMultiDimArray, varAssignment, ifStatement, whileLoop, blockStatement, procCall, ifFollower;
 non terminal procParameterCallListOrEmpty, procParameterCall;
@@ -75,20 +77,20 @@ start with program;
 
 program ::= globalDefinitionsList;
 
-globalDefinitionsList ::= globalDefinition globalDefinitionsList | /* leer */; //typeDec GlobalDefinitions | procDec GlobalDefinitions | /* leer */;
-globalDefinition ::= typeDec | procDec;
+globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = new GlobalDefinition(new Position(defleft, defright), list); :} //TODO: zur liste machen (z.B. LinkedList implementieren
+                            | /* leer */ {:RESULT = new GlobalDefinition();:};
+globalDefinition ::= typeDec:typeDec {:RESULT = typeDec;:}| procDec:procDec {:RESULT = procDec;:};
 
-typeDec ::= TYPE IDENT EQ typeArrayDec SEMIC
-                | TYPE IDENT EQ IDENT SEMIC;
-typeArrayDec ::= ARRAY LBRACK INTLIT RBRACK OF typeArrayDec
-                | ARRAY LBRACK INTLIT RBRACK OF IDENT;
+typeDec ::= TYPE IDENT:name EQ:op typeArrayDec:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), name, type);:}
+                | TYPE IDENT:name EQ:op IDENT:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), name, new NamedTypeExpression(new Position(typeleft, typeright), type));:};
+typeArrayDec ::= ARRAY LBRACK INTLIT:size RBRACK OF typeArrayDec:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), size, type);:}
+                | ARRAY LBRACK INTLIT:size RBRACK OF IDENT:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), new NamedTypeExpression(new Position(typeleft, typeright), type));:};
 
-procDec ::= PROC IDENT LPAREN procParameterListOrEmpty RPAREN LCURL procInstructionBlock RCURL;
-procParameterListOrEmpty ::= procParameterList | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
+procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:procs RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), name, vars, procs);:};
+procParameterListOrEmpty ::= procParameterList:list {:RESULT = new List<ParameterDefinition>().add(list);:} //TODO Ka ob das so stimmt
+                            | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
 procParameterList ::= procParameter | procParameter COMMA procParameterList;
 procParameter ::= IDENT COLON IDENT | REF IDENT COLON IDENT;
-
-procInstructionBlock ::= varDecList procInstructionList;
 
 varDecList ::= varDec varDecList | /* leer */;
 varDec ::= VAR IDENT COLON typeArrayDec SEMIC | VAR IDENT COLON IDENT SEMIC;
