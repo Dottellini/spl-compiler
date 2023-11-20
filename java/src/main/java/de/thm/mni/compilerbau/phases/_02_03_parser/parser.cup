@@ -60,13 +60,22 @@ non terminal List<GlobalDefinition> globalDefinitionsList;
 non terminal GlobalDefinition globalDefinition;
 non terminal TypeDefinition typeDec;
 non terminal ArrayTypeExpression typeArrayDec;
-non terminal ProcedureDefinition procDec; //Bis hier
-non terminal procParameterList, procParameterListOrEmpty, procParameter, procInstructionList, procInstruction;
-non terminal varDecList, varDec;
-non terminal varName, varNameForMultiDimArray, varAssignment, ifStatement, whileLoop, blockStatement, procCall, ifFollower;
-non terminal procParameterCallListOrEmpty, procParameterCall;
-non terminal expression, comparisonOperation, comparisonOperators;
-non terminal punktCalculation, strichCalculation, negationParenCalc, parenCalculation, calculationValue;
+non terminal ProcedureDefinition procDec;
+non terminal List<ParameterDefinition> procParameterList, procParameterListOrEmpty;
+non terminal ParameterDefinition procParameter;
+non terminal List<Statement> procInstructionList;
+non terminal AssignStatement varAssignment;
+non terminal Variable varNameForMultiDimArray, varName;
+non terminal Statement procInstruction;
+non terminal List<VariableDefinition> varDecList;
+non terminal VariableDefinition varDec;
+non terminal Statement ifStatement, whileLoop, blockStatement, procCall;
+non terminal List<CallStatement> procParameterCallListOrEmpty;
+non terminal CallStatement procParameterCall;
+non terminal BinaryExpression comparisonOperation;
+non terminal Operator comparisonOperators;
+non terminal BinaryExpression expression;
+non terminal Expression punktCalculation, strichCalculation, negationParenCalc, parenCalculation, calculationValue;
 
 precedence left LT, LE, GT, GE, EQ, NE;
 precedence left PLUS, MINUS;
@@ -75,65 +84,88 @@ precedence right ASGN;
 
 start with program;
 
-program ::= globalDefinitionsList:this {:RESULT = this;:};
+program ::= globalDefinitionsList:list {:RESULT = new Program(new Position(listleft, listright), list);:};
 
-globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = list.add(new GlobalDefinition(new Position(defleft, defright), def)); :} //TODO: idk ob das geht mit der Liste, vielleicht wie unten machen?
-                            | /* leer */ {:RESULT = list.add(new GlobalDefinition());:};
+globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = cons(def, list); :} //TODO: idk ob das geht mit der Liste, vielleicht wie unten machen?
+                            | /* leer */ {:RESULT = nil();:};
 globalDefinition ::= typeDec:typeDec {:RESULT = typeDec;:}| procDec:procDec {:RESULT = procDec;:};
 
-typeDec ::= TYPE IDENT:name EQ:op typeArrayDec:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), name, type);:}
-                | TYPE IDENT:name EQ:op IDENT:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), name, new NamedTypeExpression(new Position(typeleft, typeright), type));:};
+typeDec ::= TYPE IDENT:name EQ:op typeArrayDec:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), new Identifier(name), type);:}
+                | TYPE IDENT:name EQ:op IDENT:type SEMIC {:RESULT = new TypeDefinition(new Position(opleft, opright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)));:};
+
 typeArrayDec ::= ARRAY LBRACK INTLIT:size RBRACK OF typeArrayDec:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), size, type);:}
-                | ARRAY LBRACK INTLIT:size RBRACK OF IDENT:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), new NamedTypeExpression(new Position(typeleft, typeright), type));:};
+                | ARRAY LBRACK INTLIT:size RBRACK OF IDENT:type {:RESULT = new ArrayTypeExpression(new Position(sizeleft, sizeright), size, new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)));:};
 
-procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:procs RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), name, params, vars, procs);:};
+procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:body RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), new Identifier(name), params, vars, body);:};
+
 ////////////TODO Ka ob das so stimmt mit der Liste, muss maybe eine ListClass eingeführt werden
-procParameterListOrEmpty ::= procParameterList:plist {:RESULT = new ArrayList<ParameterDefinition>().addAll(plist);:}
-                            | /* leer */; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
-procParameterList ::= procParameter:param {:RESULT = param;:}
-                    | procParameter:param COMMA procParameterList:list {:RESULT = list.add(param);:};
+procParameterListOrEmpty ::= procParameterList:plist {:RESULT = plist;:}
+                            | /* leer */ {:RESULT = nil();:}; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
+
+procParameterList ::= procParameter:param {:RESULT = cons(param, new List<ParameterDefinition>());:}
+                    | procParameter:param COMMA procParameterList:list {:RESULT = cons(param, list);:};
 ///////////
-procParameter ::= IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), name, new NamedTypeExpression(new Position(typeleft, typeright), type), false);:}
-                    | REF IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), name, new NamedTypeExpression(new Position(typeleft, typeright), type), true);:};
+procParameter ::= IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)), false);:}
+                    | REF IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)), true);:};
 
-varDecList ::= varDec varDecList | /* leer */;
-varDec ::= VAR IDENT COLON typeArrayDec SEMIC | VAR IDENT COLON IDENT SEMIC;
+varDecList ::= varDec:var varDecList:list {:RESULT = cons(var, list);:} //TODO: Add list
+                | /* leer */ {:RESULT = nil();:};
+varDec ::= VAR IDENT:name COLON typeArrayDec:type SEMIC {:RESULT = new VariableDefinition(new Position(nameleft, nameright), new Identifier(name), type);:}
+            | VAR IDENT:name COLON IDENT:type SEMIC {:RESULT = new VariableDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)));:};
 
-procInstructionList ::= procInstruction procInstructionList | /* leer */;
-procInstruction ::= varAssignment | ifStatement | whileLoop | blockStatement | procCall | SEMIC;
+procInstructionList ::= procInstruction:instr procInstructionList:list {:RESULT = cons(instr, list);:}
+                        | /* leer */ {:RESULT = nil();:};
+procInstruction ::= varAssignment:var {:RESULT = var;:}
+                    | ifStatement:ifS {:RESULT = ifS;:}
+                    | whileLoop:whileS {:RESULT = whileS;:}
+                    | blockStatement:block {:RESULT = block;:}
+                    | procCall:proc {:RESULT = proc;:}
+                    | SEMIC;
 
 //Erstelle whileLoop, ifStatement, blockBody, varAssignment, procCall
-varAssignment ::= varName ASGN expression SEMIC;
-varName ::= IDENT | varNameForMultiDimArray LBRACK expression RBRACK;
-varNameForMultiDimArray ::= IDENT | varNameForMultiDimArray LBRACK expression RBRACK; //Wird benötigt für multi dimensionale Arrays
+varAssignment ::= varName:name ASGN expression:exp SEMIC {:RESULT = new AssignStatement(new Position(nameleft, nameright), name, exp);:};
+varName ::= IDENT:name {:RESULT = new NamedVariable(new Position(nameleft, nameright), new Identifier(name));:}
+            | varNameForMultiDimArray:array LBRACK expression:index RBRACK {:RESULT = new ArrayAccess(new Position(arrayleft, arrayright), array, index);:};
+varNameForMultiDimArray ::= IDENT:name {:RESULT = new NamedVariable(new Position(nameleft, nameright), new Identifier(name));:}
+                            | varNameForMultiDimArray:array LBRACK expression:index RBRACK {:RESULT = new ArrayAccess(new Position(arrayleft, arrayright), array, index);:}; //Wird benötigt für multi dimensionale Arrays
 
-ifStatement ::= IF LPAREN comparisonOperation RPAREN procInstruction ELSE procInstruction
-                | IF LPAREN comparisonOperation RPAREN procInstruction;
+ifStatement ::= IF LPAREN comparisonOperation:cond RPAREN procInstruction:then ELSE procInstruction:elseSt {:RESULT = new IfStatement(new Position(condleft, condright), cond, then, elseSt);:}
+                | IF LPAREN comparisonOperation:cond RPAREN procInstruction:then {:RESULT = new IfStatement(new Position(condleft, condright), cond, then, new EmptyStatement(new Position(condleft, condright)));:};
 
-whileLoop ::= WHILE LPAREN comparisonOperation RPAREN procInstruction;
+whileLoop ::= WHILE LPAREN comparisonOperation:cond RPAREN procInstruction:then {:RESULT = new WhileStatement(new Position(condleft, condright), cond, then);:};
 
-blockStatement ::= LCURL procInstructionList RCURL;
+blockStatement ::= LCURL procInstructionList:list RCURL {:RESULT = new CompoundStatement(new Position(listleft, listright), list);:};
 
-procCall ::= IDENT LPAREN procParameterCallListOrEmpty RPAREN SEMIC;
-procParameterCallListOrEmpty ::= procParameterCall | /* leer */;
-procParameterCall ::= expression | expression COMMA procParameterCall;
+procCall ::= IDENT:name LPAREN procParameterCallListOrEmpty:call RPAREN SEMIC {:RESULT = new CallStatement(new Position(nameleft, nameright), new Identifier(name), call);:};
+procParameterCallListOrEmpty ::= procParameterCall:list {:RESULT = list;:}
+                                | /* leer */ {:RESULT = nil();:};
+procParameterCall ::= expression:exp {:RESULT = cons(exp, new List<Expression>());:}
+                    | expression:exp COMMA procParameterCall:list {:RESULT = cons(exp, list);:};
 
-comparisonOperation ::= expression comparisonOperators expression;
-comparisonOperators ::= LT | LE | EQ | NE | GT | GE;
+comparisonOperation ::= expression:e1 comparisonOperators:op expression:e2 {:RESULT = new BinaryExpression(new Position(opleft, opright), op, e1, e2);:};
+comparisonOperators ::= LT {:RESULT = BinaryExpression.Operator.LST;:}
+                        | LE {:RESULT = BinaryExpression.Operator.LSE;:}
+                        | EQ {:RESULT = BinaryExpression.Operator.EQU;:}
+                        | NE {:RESULT = BinaryExpression.Operator.NEQ;:}
+                        | GT {:RESULT = BinaryExpression.Operator.GRT;:}
+                        | GE {:RESULT = BinaryExpression.Operator.GRE;:};
 
-expression ::= strichCalculation;
+expression ::= strichCalculation:calc {:REUSLT = calc;:};
 
-strichCalculation ::= strichCalculation PLUS punktCalculation
-                    | strichCalculation MINUS punktCalculation
-                    | punktCalculation;
+strichCalculation ::= strichCalculation:s1 PLUS:op punktCalculation:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.ADD, s1, s2);:}
+                    | strichCalculation:s1 MINUS:op punktCalculation:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.SUB, s1, s2);:}
+                    | punktCalculation:p {:RESULT = p;:};
 
-punktCalculation ::= punktCalculation STAR negationParenCalc
-                   | punktCalculation SLASH negationParenCalc
-                   | negationParenCalc;
+punktCalculation ::= punktCalculation:s1 STAR:op negationParenCalc:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.MUL, s1, s2);:}
+                   | punktCalculation:s1 SLASH:op negationParenCalc:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.DIV, s1, s2);:}
+                   | negationParenCalc:n {:RESULT = n;:};
 
-negationParenCalc ::= MINUS parenCalculation | parenCalculation;
+negationParenCalc ::= MINUS:op parenCalculation:exp {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.SUB, new IntLiteral(new Position(expleft, expright), 0), exp);:}
+                     | parenCalculation:p {:RESULT = p;:};
 
-parenCalculation ::= LPAREN expression RPAREN | calculationValue;
+parenCalculation ::= LPAREN expression:exp RPAREN {:RESULT = exp;:}
+                    | calculationValue:v {:RESULT = v;:};
 
-calculationValue ::= varName | INTLIT;
+calculationValue ::= varName:var {:RESULT = new VariableExpression(new Position(varleft, varright), var);:}
+                    | INTLIT:lit {:RESULT = new IntLiteral(new Position(litleft, litright), lit);:};
 

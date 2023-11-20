@@ -11,9 +11,6 @@ import de.thm.mni.compilerbau.absyn.*;
  * are implemented in this superclass and thus no compile-errors are produced.
  */
 public class DoNothingVisitor implements Visitor {
-    @Override
-    public void visit(ListNode listNode) {
-    }
 
     @Override
     public void visit(ArrayAccess arrayAccess) {
