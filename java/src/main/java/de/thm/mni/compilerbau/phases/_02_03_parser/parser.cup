@@ -51,7 +51,7 @@ terminal PLUS, MINUS, STAR, SLASH;                             //Arithmetic oper
 terminal ASGN, COMMA, COLON, SEMIC;                            //Other delimiters
 terminal TYPE, PROC, ARRAY, OF, REF, VAR, IF, ELSE, WHILE;     //Keywords
 
-terminal Identifier IDENT;    //Identifiers
+terminal String IDENT;    //Identifiers //WARNING changed from: terminal Identifier IDENT;
 terminal Integer INTLIT;      //Integer literals
 
 /* Non-terminals */
@@ -70,11 +70,10 @@ non terminal Statement procInstruction;
 non terminal List<VariableDefinition> varDecList;
 non terminal VariableDefinition varDec;
 non terminal Statement ifStatement, whileLoop, blockStatement, procCall;
-non terminal List<CallStatement> procParameterCallListOrEmpty;
-non terminal CallStatement procParameterCall;
+non terminal List<Expression> procParameterCallListOrEmpty, procParameterCall;
 non terminal BinaryExpression comparisonOperation;
-non terminal Operator comparisonOperators;
-non terminal BinaryExpression expression;
+non terminal BinaryExpression.Operator comparisonOperators;
+non terminal Expression expression;
 non terminal Expression punktCalculation, strichCalculation, negationParenCalc, parenCalculation, calculationValue;
 
 precedence left LT, LE, GT, GE, EQ, NE;
@@ -86,7 +85,7 @@ start with program;
 
 program ::= globalDefinitionsList:list {:RESULT = new Program(new Position(listleft, listright), list);:};
 
-globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = cons(def, list); :} //TODO: idk ob das geht mit der Liste, vielleicht wie unten machen?
+globalDefinitionsList ::= globalDefinition:def globalDefinitionsList:list {: RESULT = cons(def, list); :}
                             | /* leer */ {:RESULT = nil();:};
 globalDefinition ::= typeDec:typeDec {:RESULT = typeDec;:}| procDec:procDec {:RESULT = procDec;:};
 
@@ -98,17 +97,16 @@ typeArrayDec ::= ARRAY LBRACK INTLIT:size RBRACK OF typeArrayDec:type {:RESULT =
 
 procDec ::= PROC IDENT:name LPAREN procParameterListOrEmpty:params RPAREN LCURL varDecList:vars procInstructionList:body RCURL {:RESULT = new ProcedureDefinition(new Position(nameleft, nameright), new Identifier(name), params, vars, body);:};
 
-////////////TODO Ka ob das so stimmt mit der Liste, muss maybe eine ListClass eingeführt werden
 procParameterListOrEmpty ::= procParameterList:plist {:RESULT = plist;:}
                             | /* leer */ {:RESULT = nil();:}; //Man kann das nicht mit procParameterList verbinden, da man sonst (1, ) machen könnte, was nicht legal ist
 
-procParameterList ::= procParameter:param {:RESULT = cons(param, new List<ParameterDefinition>());:}
+procParameterList ::= procParameter:param {:RESULT = cons(param, new LinkedList<ParameterDefinition>());:}
                     | procParameter:param COMMA procParameterList:list {:RESULT = cons(param, list);:};
-///////////
+
 procParameter ::= IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)), false);:}
                     | REF IDENT:name COLON IDENT:type {:RESULT = new ParameterDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)), true);:};
 
-varDecList ::= varDec:var varDecList:list {:RESULT = cons(var, list);:} //TODO: Add list
+varDecList ::= varDec:var varDecList:list {:RESULT = cons(var, list);:}
                 | /* leer */ {:RESULT = nil();:};
 varDec ::= VAR IDENT:name COLON typeArrayDec:type SEMIC {:RESULT = new VariableDefinition(new Position(nameleft, nameright), new Identifier(name), type);:}
             | VAR IDENT:name COLON IDENT:type SEMIC {:RESULT = new VariableDefinition(new Position(nameleft, nameright), new Identifier(name), new NamedTypeExpression(new Position(typeleft, typeright), new Identifier(type)));:};
@@ -139,7 +137,7 @@ blockStatement ::= LCURL procInstructionList:list RCURL {:RESULT = new CompoundS
 procCall ::= IDENT:name LPAREN procParameterCallListOrEmpty:call RPAREN SEMIC {:RESULT = new CallStatement(new Position(nameleft, nameright), new Identifier(name), call);:};
 procParameterCallListOrEmpty ::= procParameterCall:list {:RESULT = list;:}
                                 | /* leer */ {:RESULT = nil();:};
-procParameterCall ::= expression:exp {:RESULT = cons(exp, new List<Expression>());:}
+procParameterCall ::= expression:exp {:RESULT = cons(exp, new LinkedList<Expression>());:}
                     | expression:exp COMMA procParameterCall:list {:RESULT = cons(exp, list);:};
 
 comparisonOperation ::= expression:e1 comparisonOperators:op expression:e2 {:RESULT = new BinaryExpression(new Position(opleft, opright), op, e1, e2);:};
@@ -150,7 +148,7 @@ comparisonOperators ::= LT {:RESULT = BinaryExpression.Operator.LST;:}
                         | GT {:RESULT = BinaryExpression.Operator.GRT;:}
                         | GE {:RESULT = BinaryExpression.Operator.GRE;:};
 
-expression ::= strichCalculation:calc {:REUSLT = calc;:};
+expression ::= strichCalculation:calc {:RESULT = calc;:};
 
 strichCalculation ::= strichCalculation:s1 PLUS:op punktCalculation:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.ADD, s1, s2);:}
                     | strichCalculation:s1 MINUS:op punktCalculation:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.SUB, s1, s2);:}
