@@ -118,7 +118,7 @@ procInstruction ::= varAssignment:var {:RESULT = var;:}
                     | whileLoop:whileS {:RESULT = whileS;:}
                     | blockStatement:block {:RESULT = block;:}
                     | procCall:proc {:RESULT = proc;:}
-                    | SEMIC;
+                    | SEMIC:sm {: RESULT = new EmptyStatement(new Position(smleft, smright));:};
 
 //Erstelle whileLoop, ifStatement, blockBody, varAssignment, procCall
 varAssignment ::= varName:name ASGN expression:exp SEMIC {:RESULT = new AssignStatement(new Position(nameleft, nameright), name, exp);:};
@@ -158,7 +158,7 @@ punktCalculation ::= punktCalculation:s1 STAR:op negationParenCalc:s2 {: RESULT 
                    | punktCalculation:s1 SLASH:op negationParenCalc:s2 {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.DIV, s1, s2);:}
                    | negationParenCalc:n {:RESULT = n;:};
 
-negationParenCalc ::= MINUS:op parenCalculation:exp {: RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.SUB, new IntLiteral(new Position(expleft, expright), 0), exp);:}
+negationParenCalc ::= MINUS:op parenCalculation:exp {: RESULT = new UnaryExpression(new Position(opleft, opright), UnaryExpression.Operator.MINUS, exp);:}
                      | parenCalculation:p {:RESULT = p;:};
 
 parenCalculation ::= LPAREN expression:exp RPAREN {:RESULT = exp;:}
