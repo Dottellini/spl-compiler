@@ -1,0 +1,18 @@
+{
+    "accepted": true,
+    "immediate_evaluation": true,
+    "log": "[2023-12-01 12:42:19.331895] Received submission d3b1050b-86b3-4b7a-98cd-349d49b25232\n[2023-12-01 12:42:19.332806] Ip: 10.196.109.93\n[2023-12-01 12:42:19.333049] Team members: [('Klauser', 'Kevin', '5451582')]\n[2023-12-01 12:42:19.340232] Your submission was ACCEPTED for course 'Compilerbau-ss23', assignment 'Aufgabe-1'.\n[2023-12-01 12:42:19.340455] Your submission has the id d3b1050b-86b3-4b7a-98cd-349d49b25232.\n[2023-12-01 12:42:19.340915] It will be evaluated shortly. Please check back soon for your results.\n",
+    "submission": {
+        "authors": [
+            {
+                "first_name": "Kevin",
+                "last_name": "Klauser",
+                "matriculation_number": "5451582"
+            }
+        ],
+        "evaluation_result": null,
+        "id": "d3b1050b-86b3-4b7a-98cd-349d49b25232",
+        "timestamp_ns": 1701430939340012927,
+        "upload_log": "[2023-12-01 12:42:19.331895] Received submission d3b1050b-86b3-4b7a-98cd-349d49b25232\n[2023-12-01 12:42:19.332806] Ip: 10.196.109.93\n[2023-12-01 12:42:19.333049] Team members: [('Klauser', 'Kevin', '5451582')]\n[2023-12-01 12:42:19.340232] Your submission was ACCEPTED for course 'Compilerbau-ss23', assignment 'Aufgabe-1'.\n[2023-12-01 12:42:19.340455] Your submission has the id d3b1050b-86b3-4b7a-98cd-349d49b25232.\n[2023-12-01 12:42:19.340915] It will be evaluated shortly. Please check back soon for your results.\n\n"
+    }
+}
