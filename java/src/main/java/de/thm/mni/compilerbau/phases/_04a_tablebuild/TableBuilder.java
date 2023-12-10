@@ -5,11 +5,15 @@ import de.thm.mni.compilerbau.absyn.Expression;
 import de.thm.mni.compilerbau.absyn.Program;
 import de.thm.mni.compilerbau.absyn.TypeExpression;
 import de.thm.mni.compilerbau.absyn.Variable;
+import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
+import de.thm.mni.compilerbau.absyn.visitor.Visitable;
+import de.thm.mni.compilerbau.absyn.visitor.Visitor;
 import de.thm.mni.compilerbau.table.Identifier;
 import de.thm.mni.compilerbau.table.ProcedureEntry;
 import de.thm.mni.compilerbau.table.SymbolTable;
 import de.thm.mni.compilerbau.types.Type;
 import de.thm.mni.compilerbau.utils.NotImplemented;
+import java_cup.runtime.Symbol;
 
 /**
  * This class is used to create and populate a {@link SymbolTable} containing entries for every symbol in the currently
@@ -28,6 +32,11 @@ public class TableBuilder {
 
     public SymbolTable buildSymbolTable(Program program) {
         //TODO (assignment 4a): Initialize a symbol table with all predefined symbols and fill it with user-defined symbols
+        SymbolTable table1 = TableInitializer.initializeGlobalTable();
+
+        Visitor visitor = new DoNothingVisitor();
+
+        program.accept(visitor);
 
         throw new NotImplemented();
     }
