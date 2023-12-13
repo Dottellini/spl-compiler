@@ -128,12 +128,32 @@ public class TableBuilder {
             for(Statement s: sList) {
                 s.accept(this); //TODO: Visit method for statement
             }
+
+            for(ParameterType param : paramTypeList){
+                if(param.type.byteSize != 0 && !param.isReference){
+                    System.err.println("Error: parameter must be a reference parameter in line " + procDef.position.line);
+                    System.exit(1);
+                }
+            }
         }
 
         public void visit(ParameterDefinition paramDef) {
             paramDef.accept(this);
             this.paramTypeList.add(new ParameterType(type, paramDef.isReference));
             currentTable.enter(paramDef.name, new VariableEntry(type, paramDef.isReference));
+        }
+
+        public void visit(NamedVariable nameType) {
+            Entry entry = globalTable.lookup(nameType.name);
+
+            if(entry instanceof VariableEntry){
+                type = ((VariableEntry) entry).type;
+            }else if(entry instanceof TypeEntry){
+                type = ((TypeEntry) entry).type;
+            }else{
+                System.err.println("Error: undefined type '" + nameType.name + "' in line " + nameType.position.line);
+                System.exit(1);
+            }
         }
     }
 
