@@ -76,7 +76,7 @@ public class TableBuilder {
                 System.exit(1);
             }*/
 
-            typeDef.accept(this);
+            typeDef.typeExpression.accept(this);
             globalTable.enter(typeDef.name, new TypeEntry(type)); //TODO: You could add an SplError Object to be thrown
         }
 
@@ -86,12 +86,12 @@ public class TableBuilder {
                 System.err.println("Error: Variable " + varDef.name + " in line " + varDef.position.line + " was already created");
                 System.exit(1);
             }*/
-            varDef.accept(this);
+            varDef.typeExpression.accept(this);
             currentTable.enter(varDef.name, new VariableEntry(type, false));
         }
 
         public void visit(ArrayTypeExpression arrType) {
-            arrType.accept(this);
+            arrType.baseType.accept(this);
             this.type = new ArrayType(type, arrType.arraySize);
         }
 
@@ -112,13 +112,13 @@ public class TableBuilder {
             //Traverse parameters
             List<ParameterDefinition> params = procDef.parameters;
             for(ParameterDefinition p: params) {
-                p.accept(this);
+                p.typeExpression.accept(this);
             }
 
             //Traverse Variables
             List<VariableDefinition> vList = procDef.variables;
             for(VariableDefinition v: vList) {
-                v.accept(this);
+                v.typeExpression.accept(this);
             }
 
             //Add entry to global table
@@ -126,7 +126,7 @@ public class TableBuilder {
 
             List<Statement> sList = procDef.body;
             for(Statement s: sList) {
-                s.accept(this); //TODO: Visit method for statement
+                s.accept(this);; //TODO: Visit method for statement
             }
 
             for(ParameterType param : paramTypeList){
@@ -138,7 +138,7 @@ public class TableBuilder {
         }
 
         public void visit(ParameterDefinition paramDef) {
-            paramDef.accept(this);
+            paramDef.typeExpression.accept(this);
             this.paramTypeList.add(new ParameterType(type, paramDef.isReference));
             currentTable.enter(paramDef.name, new VariableEntry(type, paramDef.isReference));
         }
