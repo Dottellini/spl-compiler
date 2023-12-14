@@ -3,19 +3,12 @@ package de.thm.mni.compilerbau.phases._04a_tablebuild;
 import de.thm.mni.compilerbau.CommandLineOptions;
 import de.thm.mni.compilerbau.absyn.*;
 import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
-import de.thm.mni.compilerbau.absyn.visitor.Visitable;
 import de.thm.mni.compilerbau.absyn.visitor.Visitor;
-import de.thm.mni.compilerbau.phases._02_03_parser.Sym;
 import de.thm.mni.compilerbau.table.*;
-import de.thm.mni.compilerbau.types.PrimitiveType;
 import de.thm.mni.compilerbau.types.Type;
-import de.thm.mni.compilerbau.utils.NotImplemented;
 import de.thm.mni.compilerbau.types.ArrayType;
-import de.thm.mni.compilerbau.utils.SplError;
-import java_cup.runtime.Symbol;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class is used to create and populate a {@link SymbolTable} containing entries for every symbol in the currently
@@ -28,21 +21,30 @@ import java.util.List;
 public class TableBuilder {
 
     SymbolTable globalTable = TableInitializer.initializeGlobalTable();
+    boolean printTable = true;
+    Map<Identifier, Entry> tableMapForPrinting = new HashMap<Identifier, Entry>();
     private final CommandLineOptions options;
 
     public TableBuilder(CommandLineOptions options) {
         this.options = options;
     }
 
-    //TODO; Stackoverflow irgendwo und ausgabe einbauen
     public SymbolTable buildSymbolTable(Program program) {
-        //TODO (assignment 4a): Initialize a symbol table with all predefined symbols and fill it with user-defined symbol
 
         Visitor visitor = new TableVisitor();
 
         program.accept(visitor);
 
-        throw new NotImplemented();
+        if(options.phaseOption == CommandLineOptions.PhaseOption.TABLES) {
+            Iterator<Map.Entry<Identifier, Entry>> it = tableMapForPrinting.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<Identifier, Entry> pair = (Map.Entry<Identifier, Entry>)it.next();
+                printSymbolTableAtEndOfProcedure(pair.getKey(), (ProcedureEntry) pair.getValue());
+                it.remove();
+            }
+        }
+
+        return globalTable;
     }
 
 
@@ -122,7 +124,8 @@ public class TableBuilder {
             }
 
             //Add entry to global table
-            globalTable.enter(procDef.name, new ProcedureEntry(currentTable, pList));
+            ProcedureEntry procEntry = new ProcedureEntry(currentTable, pList);
+            globalTable.enter(procDef.name, procEntry);
 
             List<Statement> sList = procDef.body;
             for(Statement s: sList) {
@@ -135,6 +138,8 @@ public class TableBuilder {
                     System.exit(1);
                 }
             }
+
+            tableMapForPrinting.put(procDef.name, procEntry);
         }
 
         public void visit(ParameterDefinition paramDef) {
@@ -143,7 +148,7 @@ public class TableBuilder {
             currentTable.enter(paramDef.name, new VariableEntry(type, paramDef.isReference));
         }
 
-        public void visit(NamedVariable nameType) {
+        public void visit(NamedTypeExpression nameType) {
             Entry entry = globalTable.lookup(nameType.name);
 
             if(entry instanceof VariableEntry){
