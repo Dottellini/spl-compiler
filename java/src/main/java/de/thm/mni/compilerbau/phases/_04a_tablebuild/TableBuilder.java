@@ -21,7 +21,6 @@ import java.util.*;
 public class TableBuilder {
 
     SymbolTable globalTable = TableInitializer.initializeGlobalTable();
-    boolean printTable = true;
     Map<Identifier, Entry> tableMapForPrinting = new HashMap<Identifier, Entry>();
     private final CommandLineOptions options;
 
@@ -35,13 +34,19 @@ public class TableBuilder {
 
         program.accept(visitor);
 
+        //TODO: level 0 always empty
         if(options.phaseOption == CommandLineOptions.PhaseOption.TABLES) {
-            Iterator<Map.Entry<Identifier, Entry>> it = tableMapForPrinting.entrySet().iterator();
+            for (Map.Entry<Identifier, Entry> entry : tableMapForPrinting.entrySet()) {
+                Identifier key = entry.getKey();
+                ProcedureEntry value = (ProcedureEntry) entry.getValue();
+                printSymbolTableAtEndOfProcedure(key, value);
+            }
+            /*Iterator<Map.Entry<Identifier, Entry>> it = tableMapForPrinting.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<Identifier, Entry> pair = (Map.Entry<Identifier, Entry>)it.next();
+                Map.Entry<Identifier, Entry> pair = it.next();
                 printSymbolTableAtEndOfProcedure(pair.getKey(), (ProcedureEntry) pair.getValue());
                 it.remove();
-            }
+            }*/
         }
 
         return globalTable;
@@ -57,14 +62,58 @@ public class TableBuilder {
             for(GlobalDefinition g: prog.definitions) {
                 if(g instanceof TypeDefinition){
                     g.accept(this);
-                }
-            }
-            for(GlobalDefinition g: prog.definitions) {
-                if(g instanceof ProcedureDefinition){
+                } else if (g instanceof  ProcedureDefinition) {
                     g.accept(this);
                 }
             }
+
         }
+
+        public void visit(ProcedureDefinition procDef) {
+            //Check if procedure was already created with that name
+            /*if (globalTable.lookup(procDef.name) != null) {
+                System.err.println("Error: Variable " + procDef.name + " in line " + procDef.position.line + " was already created");
+                System.exit(1);
+            }*/
+
+            //Create level 0 table
+            this.currentTable = new SymbolTable(globalTable);
+
+            //Create Parameterlist
+            List<ParameterType> pList = new ArrayList<>();
+            this.paramTypeList = pList;
+
+            //Traverse parameters
+            List<ParameterDefinition> params = procDef.parameters;
+            for(ParameterDefinition p: params) {
+                p.typeExpression.accept(this);
+            }
+
+            //Traverse Variables
+            List<VariableDefinition> vList = procDef.variables;
+            for(VariableDefinition v: vList) {
+                v.typeExpression.accept(this);
+            }
+
+            //Add entry to global table
+            ProcedureEntry procEntry = new ProcedureEntry(currentTable, paramTypeList);
+            globalTable.enter(procDef.name, procEntry);
+
+            List<Statement> sList = procDef.body;
+            for(Statement s: sList) {
+                s.accept(this);; //TODO: Visit method for statement
+            }
+
+            for(ParameterType param : paramTypeList){
+                if(param.type.byteSize != 0 && !param.isReference){
+                    System.err.println("Error: parameter must be a reference parameter in line " + procDef.position.line);
+                    System.exit(1);
+                }
+            }
+
+            tableMapForPrinting.put(procDef.name, procEntry);
+        }
+
         public void visit(TypeDefinition typeDef) {
             //Check if type was already created with that name
             /*if(globalTable.lookup(typeDef.name) != null){
@@ -95,51 +144,6 @@ public class TableBuilder {
         public void visit(ArrayTypeExpression arrType) {
             arrType.baseType.accept(this);
             this.type = new ArrayType(type, arrType.arraySize);
-        }
-
-        public void visit(ProcedureDefinition procDef) {
-            //Check if procedure was already created with that name
-            /*if (globalTable.lookup(procDef.name) != null) {
-                System.err.println("Error: Variable " + procDef.name + " in line " + procDef.position.line + " was already created");
-                System.exit(1);
-            }*/
-
-            //Create level 0 table
-            this.currentTable = new SymbolTable(globalTable);
-
-            //Create Parameterlist
-            List<ParameterType> pList = new LinkedList<>();
-            this.paramTypeList = pList;
-
-            //Traverse parameters
-            List<ParameterDefinition> params = procDef.parameters;
-            for(ParameterDefinition p: params) {
-                p.typeExpression.accept(this);
-            }
-
-            //Traverse Variables
-            List<VariableDefinition> vList = procDef.variables;
-            for(VariableDefinition v: vList) {
-                v.typeExpression.accept(this);
-            }
-
-            //Add entry to global table
-            ProcedureEntry procEntry = new ProcedureEntry(currentTable, pList);
-            globalTable.enter(procDef.name, procEntry);
-
-            List<Statement> sList = procDef.body;
-            for(Statement s: sList) {
-                s.accept(this);; //TODO: Visit method for statement
-            }
-
-            for(ParameterType param : paramTypeList){
-                if(param.type.byteSize != 0 && !param.isReference){
-                    System.err.println("Error: parameter must be a reference parameter in line " + procDef.position.line);
-                    System.exit(1);
-                }
-            }
-
-            tableMapForPrinting.put(procDef.name, procEntry);
         }
 
         public void visit(ParameterDefinition paramDef) {

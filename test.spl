@@ -69,3 +69,4 @@ i := i + 1;
 }
 printc('\n');
 }
+proc printboard(ref col: A8) {}
