@@ -3,8 +3,8 @@
   <component name="AutoImportedSourceRoots">
     <option name="directories">
       <list>
-        <option value="C:\Users\naehr\Desktop\Daten\Uni\compilerbau\spl-compiler\kotlin\target/generated-sources/cup" />
-        <option value="C:\Users\naehr\Desktop\Daten\Uni\compilerbau\spl-compiler\kotlin\target/generated-sources/jflex" />
+        <option value="$MODULE_DIR$/target/generated-sources/cup" />
+        <option value="$MODULE_DIR$/target/generated-sources/jflex" />
         <option value="src/main/kotlin" />
       </list>
     </option>
