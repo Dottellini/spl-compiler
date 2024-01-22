@@ -95,13 +95,9 @@ public class TableBuilder {
                 v.typeExpression.accept(this);
             }
 
-            //Add entry to global table
-            ProcedureEntry procEntry = new ProcedureEntry(currentTable, paramTypeList);
-            globalTable.enter(procDef.name, procEntry);
-
             List<Statement> sList = procDef.body;
             for(Statement s: sList) {
-                s.accept(this);; //TODO: Visit method for statement
+                s.accept(this); //TODO: Visit method for statement
             }
 
             for(ParameterType param : paramTypeList){
@@ -110,6 +106,10 @@ public class TableBuilder {
                     System.exit(1);
                 }
             }
+
+            //Add entry to global table
+            ProcedureEntry procEntry = new ProcedureEntry(currentTable, paramTypeList);
+            globalTable.enter(procDef.name, procEntry);
 
             tableMapForPrinting.put(procDef.name, procEntry);
         }
