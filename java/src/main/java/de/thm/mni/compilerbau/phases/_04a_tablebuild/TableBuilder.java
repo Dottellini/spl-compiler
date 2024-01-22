@@ -20,7 +20,7 @@ import java.util.*;
  */
 public class TableBuilder {
 
-    SymbolTable globalTable = TableInitializer.initializeGlobalTable();
+    SymbolTable globalTable;
     Map<Identifier, Entry> tableMapForPrinting = new HashMap<Identifier, Entry>();
     private final CommandLineOptions options;
 
@@ -29,7 +29,7 @@ public class TableBuilder {
     }
 
     public SymbolTable buildSymbolTable(Program program) {
-
+        this.globalTable = TableInitializer.initializeGlobalTable();
         Visitor visitor = new TableVisitor();
 
         program.accept(visitor);
@@ -147,6 +147,12 @@ public class TableBuilder {
         }
 
         public void visit(ParameterDefinition paramDef) {
+            //TODO: Check for double parameters
+            if(currentTable.lookup(paramDef.name) != null) {
+                System.err.println("Error: Parameter " + paramDef.name + " in line " + paramDef.position.line + " was already created");
+                System.exit(1);
+            }
+
             paramDef.typeExpression.accept(this);
             this.paramTypeList.add(new ParameterType(type, paramDef.isReference));
             currentTable.enter(paramDef.name, new VariableEntry(type, paramDef.isReference));
