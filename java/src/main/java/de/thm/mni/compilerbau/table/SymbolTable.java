@@ -13,7 +13,8 @@ import java.util.stream.Collectors;
  * Maps identifiers to the corresponding symbols.
  */
 public class SymbolTable {
-    private final Map<Identifier, Entry> entries = new HashMap<>();
+    //private final Map<Identifier, Entry> entries = new HashMap<>();
+    public final Map<Identifier, Entry> entries = new HashMap<>();
     private final SymbolTable upperLevel;
 
     /**
