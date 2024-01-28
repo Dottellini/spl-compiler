@@ -35,7 +35,6 @@ public class TableBuilder {
 
         program.accept(visitor);
 
-        //TODO: level 0 always empty
         if(options.phaseOption == CommandLineOptions.PhaseOption.TABLES) {
             for (Map.Entry<Identifier, Entry> entry : tableMapForPrinting.entrySet()) {
                 Identifier key = entry.getKey();
@@ -137,12 +136,13 @@ public class TableBuilder {
                 s.accept(this); //TODO: Visit method for statement
             }
 
-            /*for(ParameterType param : paramTypeList){
-                if(param.type.byteSize != 0 && !param.isReference){
-                    System.err.println("Error: parameter must be a reference parameter in line " + procDef.position.line);
-                    System.exit(1);
+            //Prüft Regel 4 aus dem Compilterbau Buch
+            for(ParameterType param : paramTypeList){
+                if(param.type instanceof ArrayType && !param.isReference){
+                    System.err.println("Non-reference parameter '" + param + "' has type 'ArrayType', which can only be passed by reference.");
+                    System.exit(104);
                 }
-            }*/
+            }
 
             //Add entry to global table
             ProcedureEntry procEntry = new ProcedureEntry(currentTable, paramTypeList);
