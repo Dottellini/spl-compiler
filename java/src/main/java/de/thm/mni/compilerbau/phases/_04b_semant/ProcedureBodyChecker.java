@@ -125,8 +125,25 @@ public class ProcedureBodyChecker {
             if(variableEntry.type.byteSize == 4) {
                 this.currentNamedVar = namedVariable;
             } else {
+                if(rightSideOfAssign && assignLeftArray && currentArrayType == 0) {
+                    indexTypeMismatch(variableEntry.type);
+                }
+                if(currentArrayType > variableEntry.type.byteSize) {
+                    invalidArrayAccess(variableEntry.type);
+                }
 
+                assignLeftArray = true;
+                this.currentArraySimpleVar = namedVariable;
             }
+
+            currentOpExpIntType = ((VariableEntry) entry).type.byteSize == 4;
+        }
+
+        @Override
+        public void visit(ArrayAccess arrayAccess) {
+            currentArrayType++;
+            arrayAccess.array.accept(this);
+            arrayAccess.index.accept(this);
         }
 
         @Override
@@ -229,6 +246,11 @@ public class ProcedureBodyChecker {
         void invalidArrayAccess(Type type) {
             System.err.println("Type mismatch: Invalid array access operation on non-array variable of type '" + type + "'.");
             System.exit(123);
+        }
+
+        void indexTypeMismatch(Type type) {
+            System.err.println("Type mismatch: Array index expected to be of type 'int', but is type '" + type + "'.");
+            System.exit(124);
         }
     }
 
