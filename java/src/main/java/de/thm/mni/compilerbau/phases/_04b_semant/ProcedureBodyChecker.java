@@ -39,11 +39,13 @@ public class ProcedureBodyChecker {
         SymbolTable localTable;
         NamedVariable currentArraySimpleVar;
         NamedVariable currentNamedVar;
+        ProcedureEntry currentProcEntry;
         boolean hasMainBeenDeclared;
         int currentArrayType;
         int previousArrayType;
         int leftTypeOfAssign;
         int leftArraySize;
+        int currentRow;
         boolean assignStmFlag;
         boolean assignLeftArray;
         boolean rightSideOfAssign;
@@ -56,11 +58,12 @@ public class ProcedureBodyChecker {
         TypeAnalysisVisitor(SymbolTable table){
             this.globalTable = table;
             this.hasMainBeenDeclared = false;
-            /*this.currentProcEntry = null;
-            this.currentArrayType = 0;
+            this.currentProcEntry = null;
+            this.currentRow = 0;
+            /*this.currentArrayType = 0;
             this.leftOp = 0;
             this.rightOp = 0;
-            this.currentRow = 0;*/
+            */
         }
 
         @Override
@@ -80,14 +83,14 @@ public class ProcedureBodyChecker {
 
             if(procedureDefinition.name.equals(new Identifier("main"))) {
                 hasMainBeenDeclared = true;
-                if(procedureDefinition.parameters.size() > 0) {
+                if(!procedureDefinition.parameters.isEmpty()) {
                     mainMustNotHaveParameters();
                 }
             }
 
-            //procedureDefinition.parameters.forEach(p -> p.accept(this));
-
-            //procedureDefinition.variables.forEach(v -> v.accept(this));
+            procedureDefinition.parameters.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(s -> s.accept(this));
 
             procedureDefinition.body.stream()
                     .filter(Objects::nonNull)
@@ -98,11 +101,6 @@ public class ProcedureBodyChecker {
         public void visit(IntLiteral intLiteral) {
             this.currentOpExpIntType = PrimitiveType.intType;
             this.isCurrentOpExpIntType = true;
-        }
-
-        @Override
-        public void visit(ArrayTypeExpression arrayTypeExpression) {
-
         }
 
         @Override
@@ -130,17 +128,13 @@ public class ProcedureBodyChecker {
         }
 
         @Override
-        public void visit(NamedTypeExpression namedTypeExpression) {
-
-        }
-
-        @Override
         public void visit(NamedVariable namedVariable) {
             Entry entry = globalTable.lookup(namedVariable.name);
 
-            if(entry == null) undefinedIdentifier(namedVariable.name);
+            if(entry == null) undefinedIdentifier(namedVariable.name, namedVariable.position);
 
             VariableEntry variableEntry = (VariableEntry) entry;
+            assert variableEntry != null;
             if(variableEntry.type.byteSize == 4) {
                 this.currentNamedVar = namedVariable;
             } else {
@@ -205,10 +199,9 @@ public class ProcedureBodyChecker {
         @Override
         public void visit(CallStatement callStatement) {
             Entry entry = globalTable.lookup(callStatement.procedureName);
-            if (entry instanceof ProcedureEntry) {
+            if (entry instanceof ProcedureEntry procEntry) {
                 int argsSize = callStatement.arguments.size();
-                ProcedureEntry procEntry = (ProcedureEntry) entry;
-                //this.currentProcEntry = procEntry;
+                this.currentProcEntry = procEntry;
 
                 int expectedArgSize = procEntry.parameterTypes.size();
                 if (argsSize != expectedArgSize) {
@@ -218,7 +211,37 @@ public class ProcedureBodyChecker {
                 identifierNotAProcedure(callStatement.procedureName);
             }
 
-            //TODO: siehe code?
+            int index = 0;
+            int pos = 0;
+            Node element = null;
+
+            for(ParameterType p: currentProcEntry.parameterTypes) {
+                for(Expression e: callStatement.arguments) {
+                    if(pos == index) {
+                        element = e;
+                        break;
+                    }
+                }
+
+                currentRow = callStatement.position.line;
+                if(p.isReference) {
+                    if(element instanceof IntLiteral || element instanceof BinaryExpression) {
+                        identNotaVariable(callStatement.procedureName);
+                    } else if(element instanceof VariableExpression exp) {
+
+                        if(exp.variable instanceof ArrayAccess) {
+                            int paramSize = p.type.byteSize;
+                            exp.variable.accept(this);
+                            VariableEntry varEntry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
+                            int entrySize = varEntry.type.byteSize;
+                            if(entrySize - currentArrayType != paramSize) {
+                                argumentTypeMismatch(callStatement.procedureName, pos, varEntry.type, p.type);
+                            }
+                        }
+                    }
+                }
+                pos++;
+            }
         }
 
         @Override
@@ -246,6 +269,7 @@ public class ProcedureBodyChecker {
             }
 
             if(assignStatement.target instanceof ArrayAccess){
+                assert currentArraySimpleVar != null;
                 VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
                 int size = entry.type.byteSize;
                 if(currentArrayType > size && assignStmFlag || size != currentArrayType  && !assignStmFlag || currentArraySimpleVar == null){
@@ -285,6 +309,8 @@ public class ProcedureBodyChecker {
                 ifConditionTypeMismatch(ifStatement.condition);
             }
 
+            this.currentRow = ifStatement.position.line;
+
             ifStatement.condition.accept(this);
             ifStatement.thenPart.accept(this);
             ifStatement.elsePart.accept(this);
@@ -296,13 +322,15 @@ public class ProcedureBodyChecker {
                 whileConditionTypeMismatch(whileStatement.condition);
             }
 
+            this.currentRow = whileStatement.position.line;
+
             whileStatement.condition.accept(this);
             whileStatement.body.accept(this);
         }
 
         //-----Errors------
-        static void undefinedIdentifier(Identifier identifier) {
-            System.err.println("Identifier '" + identifier + "' is not defined.");
+        static void undefinedIdentifier(Identifier identifier, Position p) {
+            System.err.println("Identifier '" + identifier + "' is not defined. In Line: " + p.line);
             System.exit(101);
         }
         static void identifierNotRefered(Identifier identifier) { //In Tablebuilder
@@ -313,7 +341,7 @@ public class ProcedureBodyChecker {
             System.err.println("Identifier '" + identifier + "' is already defined in this scope.");
             System.exit(103);
         }
-        static void nonRefernceHasReferneceType(Identifier identifier, Type type) { //In Tablebuilder
+        static void nonReferenceHasReferenceType(Identifier identifier, Type type) { //In Tablebuilder
             System.err.println("Non-reference parameter '"+ identifier + "' has type '" + type + "', which can only be passed by reference.");
             System.exit(104);
         }
@@ -337,6 +365,7 @@ public class ProcedureBodyChecker {
             System.err.println("Argument type mismatch in call of procedure '" + procedure + "'. Argument " + argNum + " is expected to have type '" + expectedArgType + "', but has type '" + givenArgType + "'.");
             System.exit(114);
         }
+        //TODO: Implement this error
         static void refArgMustBeVariable(Identifier procedure, int argNum) {
             System.err.println("Invalid argument for reference parameter in call to procedure '" + procedure + "': Argument " + argNum + " must be a variable.");
             System.exit(115);

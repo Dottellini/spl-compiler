@@ -6,6 +6,7 @@ import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
 import de.thm.mni.compilerbau.absyn.visitor.Visitor;
 import de.thm.mni.compilerbau.phases._04b_semant.ProcedureBodyChecker;
 import de.thm.mni.compilerbau.table.*;
+import de.thm.mni.compilerbau.types.PrimitiveType;
 import de.thm.mni.compilerbau.types.Type;
 import de.thm.mni.compilerbau.types.ArrayType;
 import de.thm.mni.compilerbau.utils.SplError;
@@ -137,7 +138,7 @@ public class TableBuilder {
                 s.accept(this); //TODO: Visit method for statement
             }
 
-            //Prüft Regel 4 aus dem Compilterbau Buch
+            //Prüft Regel 4 aus dem Compilerbau Buch
             for(ParameterType param : paramTypeList){
                 if(param.type instanceof ArrayType && !param.isReference){
                     System.err.println("Non-reference parameter '" + param + "' has type 'ArrayType', which can only be passed by reference.");
