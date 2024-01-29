@@ -4,6 +4,7 @@ import de.thm.mni.compilerbau.CommandLineOptions;
 import de.thm.mni.compilerbau.absyn.*;
 import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
 import de.thm.mni.compilerbau.absyn.visitor.Visitor;
+import de.thm.mni.compilerbau.phases._04b_semant.ProcedureBodyChecker;
 import de.thm.mni.compilerbau.table.*;
 import de.thm.mni.compilerbau.types.Type;
 import de.thm.mni.compilerbau.types.ArrayType;
@@ -62,16 +63,16 @@ public class TableBuilder {
 
         public void visit(TypeDefinition typeDef) {
             //Check if type was already created with that name
-            /*if(globalTable.lookup(typeDef.name) != null){
-                System.err.println("Error: Type " + typeDef.name + " in line " + typeDef.position.line + " was already created");
-                System.exit(1);
+            if(globalTable.lookup(typeDef.name) != null){
+                System.err.println("Identifier '" + typeDef.name + "' is already defined in this scope.");
+                System.exit(103);
             }
 
             //Check if type is called main
             if(typeDef.name.equals(new Identifier("main"))){
-                System.err.println("Error: 'main' must be a procedure");
-                System.exit(1);
-            }*/
+                System.err.println("Identifier 'main' does not refer to a procedure.");
+                System.exit(126);
+            }
 
             typeDef.typeExpression.accept(this);
             globalTable.enter(typeDef.name, new TypeEntry(type)); //TODO: You could add an SplError Object to be thrown
@@ -90,16 +91,16 @@ public class TableBuilder {
             }else if(entry instanceof TypeEntry){
                 type = ((TypeEntry) entry).type;
             }else{
-                System.err.println("Error: undefined type '" + nameType.name + "' in line " + nameType.position.line);
-                System.exit(1);
+                System.err.println("Identifier '" + nameType.name + "' does not refer to a type.");
+                System.exit(102);
             }
         }
 
         public void visit(VariableDefinition varDef) {
             //Check if variable was already created with that name
             if(globalTable.lookup(varDef.name) != null){
-                System.err.println("Error: Variable " + varDef.name + " in line " + varDef.position.line + " was already created");
-                System.exit(1);
+                System.err.println("Identifier '" + varDef.name + "' is already defined in this scope.");
+                System.exit(103);
             }
             varDef.typeExpression.accept(this);
             currentTable.enter(varDef.name, new VariableEntry(type, false));
@@ -107,10 +108,10 @@ public class TableBuilder {
 
         public void visit(ProcedureDefinition procDef) {
             //Check if procedure was already created with that name
-            //if (globalTable.lookup(procDef.name) != null) {
-            //    System.err.println("Error: Variable " + procDef.name + " in line " + procDef.position.line + " was already created");
-            //    System.exit(1);
-            //}
+            if (globalTable.lookup(procDef.name) != null) {
+                System.err.println("Identifier '" + procDef.name + "' is already defined in this scope.");
+                System.exit(103);
+            }
 
             //Create level 0 table
             this.currentTable = new SymbolTable(globalTable);
@@ -154,8 +155,8 @@ public class TableBuilder {
         public void visit(ParameterDefinition paramDef) {
             //TODO: Check for double parameters
             if(currentTable.lookup(paramDef.name) != null) {
-                System.err.println("Error: Parameter " + paramDef.name + " in line " + paramDef.position.line + " was already created");
-                System.exit(1);
+                System.err.println("Identifier '" + paramDef.name + "' is already defined in this scope.");
+                System.exit(103);
             }
 
             paramDef.typeExpression.accept(this);

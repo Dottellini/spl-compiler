@@ -39,6 +39,7 @@ public class ProcedureBodyChecker {
         SymbolTable localTable;
         NamedVariable currentArraySimpleVar;
         NamedVariable currentNamedVar;
+        boolean hasMainBeenDeclared;
         int currentArrayType;
         int previousArrayType;
         int leftTypeOfAssign;
@@ -54,6 +55,7 @@ public class ProcedureBodyChecker {
 
         TypeAnalysisVisitor(SymbolTable table){
             this.globalTable = table;
+            this.hasMainBeenDeclared = false;
             /*this.currentProcEntry = null;
             this.currentArrayType = 0;
             this.leftOp = 0;
@@ -66,12 +68,22 @@ public class ProcedureBodyChecker {
             program.definitions.stream()
                     .filter(d -> d instanceof ProcedureDefinition)
                     .forEach(p -> p.accept(this));
+
+            if(!hasMainBeenDeclared) mainIsMissing();
+
         }
 
         @Override
         public void visit(ProcedureDefinition procedureDefinition) {
             ProcedureEntry procEntry = (ProcedureEntry) globalTable.lookup(procedureDefinition.name);
             this.localTable = procEntry.localTable;
+
+            if(procedureDefinition.name.equals(new Identifier("main"))) {
+                hasMainBeenDeclared = true;
+                if(procedureDefinition.parameters.size() > 0) {
+                    mainMustNotHaveParameters();
+                }
+            }
 
             //procedureDefinition.parameters.forEach(p -> p.accept(this));
 
@@ -289,51 +301,87 @@ public class ProcedureBodyChecker {
         }
 
         //-----Errors------
-        void undefinedIdentifier(Identifier identifier) {
+        static void undefinedIdentifier(Identifier identifier) {
             System.err.println("Identifier '" + identifier + "' is not defined.");
             System.exit(101);
         }
-        void assignmentTypeMismatch(Type type1, Type type2) {
+        static void identifierNotRefered(Identifier identifier) { //In Tablebuilder
+            System.err.println("Identifier '" + identifier + "' does not refer to a type.");
+            System.exit(102);
+        }
+        static void identifierAlreadyInScope(Identifier identifier) { //In Tablebuilder
+            System.err.println("Identifier '" + identifier + "' is already defined in this scope.");
+            System.exit(103);
+        }
+        static void nonRefernceHasReferneceType(Identifier identifier, Type type) { //In Tablebuilder
+            System.err.println("Non-reference parameter '"+ identifier + "' has type '" + type + "', which can only be passed by reference.");
+            System.exit(104);
+        }
+        static void assignmentTypeMismatch(Type type1, Type type2) {
             System.err.println("A value of type '" + type1 + "' can not be assigned to variable of type '" + type2 + "'.");
             System.exit(108);
         }
-        void ifConditionTypeMismatch(Expression type) {
+        static void ifConditionTypeMismatch(Expression type) {
             System.err.println("'if' condition expected to be of type 'boolean', but is of type '" + type + "'.");
             System.exit(110);
         }
-        void whileConditionTypeMismatch(Expression type) {
+        static void whileConditionTypeMismatch(Expression type) {
             System.err.println("while' condition expected to be of type 'boolean', but is of type '" + type + "'.");
             System.exit(111);
         }
-        void identifierNotAProcedure(Identifier identifier) {
+        static void identifierNotAProcedure(Identifier identifier) {
             System.err.println("Identifier '" + identifier + "' does not refer to a procedure.");
             System.exit(113);
         }
-        void procArgumentCountMismatch(Identifier procName, int expectedSize, int providedSize) {
+        static void argumentTypeMismatch(Identifier procedure, int argNum, Type expectedArgType, Type givenArgType) {
+            System.err.println("Argument type mismatch in call of procedure '" + procedure + "'. Argument " + argNum + " is expected to have type '" + expectedArgType + "', but has type '" + givenArgType + "'.");
+            System.exit(114);
+        }
+        static void refArgMustBeVariable(Identifier procedure, int argNum) {
+            System.err.println("Invalid argument for reference parameter in call to procedure '" + procedure + "': Argument " + argNum + " must be a variable.");
+            System.exit(115);
+        }
+        static void procArgumentCountMismatch(Identifier procName, int expectedSize, int providedSize) {
             System.err.println("Argument count mismatch: Procedure '" + procName + "' expects + " + expectedSize + " arguments, but " + providedSize + " were provided.");
             System.exit(116);
         }
-        void binaryTypeMismatch(BinaryExpression.Operator binaryOperator, Expression type1, Expression type2) {
+        static void binaryTypeMismatch(BinaryExpression.Operator binaryOperator, Expression type1, Expression type2) {
             System.err.println("Type mismatch in binary expression: Operator '" + binaryOperator + "' does not accept operands of types '" + type1 + "' and '" + type2 + "'.");
             System.exit(118);
         }
-        void binaryTypeMismatch(BinaryExpression.Operator binaryOperator, Type type1, Type type2) {
+        static void binaryTypeMismatch(BinaryExpression.Operator binaryOperator, Type type1, Type type2) {
             System.err.println("Type mismatch in binary expression: Operator '" + binaryOperator + "' does not accept operands of types '" + type1 + "' and '" + type2 + "'.");
             System.exit(118);
         }
-        void unaryTypeMismatch(UnaryExpression.Operator operator, Type type) {
+        static void unaryTypeMismatch(UnaryExpression.Operator operator, Type type) {
             System.err.println("Type mismatch in unary expression: Operator '" + operator + "' does not accept operand of type '" + type + "'.");
             System.exit(119);
         }
-        void invalidArrayAccess(Type type) {
+        static void identNotaVariable(Identifier identifier) {
+            System.err.println("Identifier '" + identifier + "' does not refer to a variable.");
+            System.exit(122);
+        }
+        static void invalidArrayAccess(Type type) {
             System.err.println("Type mismatch: Invalid array access operation on non-array variable of type '" + type + "'.");
             System.exit(123);
         }
-
-        void indexTypeMismatch(Type type) {
+        static void indexTypeMismatch(Type type) {
             System.err.println("Type mismatch: Array index expected to be of type 'int', but is type '" + type + "'.");
             System.exit(124);
         }
+        static void mainIsMissing() {
+            System.err.println("Procedure 'main' is missing.");
+            System.exit(125);
+        }
+        static void mainNotAProcedure() { //In TableBuilder
+            System.err.println("Identifier 'main' does not refer to a procedure");
+            System.exit(126);
+        }
+        static void mainMustNotHaveParameters() {
+            System.err.println("Procedure 'main' must not have any parameters");
+            System.exit(127);
+        }
+
     }
 
 }
