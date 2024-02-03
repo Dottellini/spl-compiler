@@ -142,7 +142,7 @@ public class ProcedureBodyChecker {
             VariableEntry variableEntry = (VariableEntry) entry;
             assert variableEntry != null;
             if(calculateTypeSize(variableEntry.type) == 0) {
-                this.currentNamedVar = namedVariable;
+                this.currentArraySimpleVar = namedVariable; //this.currentNamedVar = namedVariable;
             } else {
                 if(rightSideOfAssign && assignLeftArray && currentArrayType == 0) {
                     indexTypeMismatch(variableEntry.type);
@@ -174,7 +174,6 @@ public class ProcedureBodyChecker {
                 currentArrayType = 0;
             }
             variableExpression.variable.accept(this);
-            //TODO currentArraySimpleVar is null
             VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
 
             if(variableExpression.variable instanceof ArrayAccess) {
@@ -213,35 +212,39 @@ public class ProcedureBodyChecker {
                 if (argsSize != expectedArgSize) {
                     procArgumentCountMismatch(callStatement.procedureName, expectedArgSize, argsSize);
                 }
+            } else if (entry instanceof VariableEntry) {
+                identifierNotAProcedure(callStatement.procedureName);
             } else { //Call was not a procedure
                 identifierNotAProcedure(callStatement.procedureName);
             }
 
-            int index = 0;
             int pos = 0;
-            Node element = null;
+            Node elem = null;
 
-            for(ParameterType p: currentProcEntry.parameterTypes) {
-                for(Expression e: callStatement.arguments) {
+            for(ParameterType param : currentProcEntry.parameterTypes){ //iterating actual params
+                int index = 0;
+                for(Node n: callStatement.arguments) {
+                    elem = n;
                     if(pos == index) {
-                        element = e;
                         break;
                     }
+                    index++;
                 }
 
                 currentRow = callStatement.position.line;
-                if(p.isReference) {
-                    if(element instanceof IntLiteral || element instanceof BinaryExpression) {
-                        identNotaVariable(callStatement.procedureName);
-                    } else if(element instanceof VariableExpression exp) {
+                if(param.isReference){
+                    if(elem instanceof IntLiteral || elem instanceof BinaryExpression){
+                        argumentTypeMismatch(callStatement.procedureName, (pos + 1), param.type, PrimitiveType.intType);
+                    }else if(elem instanceof VariableExpression){
+                        VariableExpression varExp = (VariableExpression) elem;
 
-                        if(exp.variable instanceof ArrayAccess) {
-                            int paramSize = p.type.byteSize;
-                            exp.variable.accept(this);
-                            VariableEntry varEntry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
+                        if(varExp.variable instanceof ArrayAccess){
+                            int paramSize = calculateTypeSize(param.type);
+                            varExp.variable.accept(this);
+                            VariableEntry varEntry = (VariableEntry)(localTable.lookup(currentArraySimpleVar.name));
                             int entrySize = calculateTypeSize(varEntry.type);
-                            if(entrySize - currentArrayType != paramSize) {
-                                argumentTypeMismatch(callStatement.procedureName, pos, varEntry.type, p.type);
+                            if(entrySize - currentArrayType != paramSize){
+                                argumentTypeMismatch(callStatement.procedureName, (pos + 1), param.type, varEntry.type);
                             }
                         }
                     }
