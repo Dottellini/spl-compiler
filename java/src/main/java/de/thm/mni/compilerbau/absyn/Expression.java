@@ -11,6 +11,7 @@ import de.thm.mni.compilerbau.types.Type;
  * Every expression has a semantic type, which has to be calculated in phase 4.
  */
 public abstract sealed class Expression extends Node permits BinaryExpression, IntLiteral, UnaryExpression, VariableExpression {
+    public Type dataType;
     public Expression(Position position) {
         super(position);
     }

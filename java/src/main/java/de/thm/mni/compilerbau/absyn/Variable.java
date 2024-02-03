@@ -9,6 +9,7 @@ import de.thm.mni.compilerbau.types.Type;
  * Every variable has a semantic {@link Type} which has to be filled in during phase 4.
  */
 public abstract sealed class Variable extends Node permits ArrayAccess, NamedVariable {
+    public Type dataType;
     public Variable(Position position) {
         super(position);
     }
