@@ -52,7 +52,10 @@ public class ProcedureBodyChecker {
         boolean isCurrentOpExpIntType;
         Type currentOpExpIntType;
         boolean leftArrayWithoutIndex;
+        boolean isCurrentLeftOpExpIntType;
         Type currentLeftOpExpIntType;
+
+        boolean isCurrentRightOpExpIntType;
         Type currentRightOpExpIntType;
 
         TypeAnalysisVisitor(SymbolTable table){
@@ -60,10 +63,7 @@ public class ProcedureBodyChecker {
             this.hasMainBeenDeclared = false;
             this.currentProcEntry = null;
             this.currentRow = 0;
-            /*this.currentArrayType = 0;
-            this.leftOp = 0;
-            this.rightOp = 0;
-            */
+            this.currentArrayType = 0;
         }
 
         @Override
@@ -106,23 +106,29 @@ public class ProcedureBodyChecker {
         @Override
         public void visit(BinaryExpression binaryExpression) {
             binaryExpression.leftOperand.accept(this);
+            isCurrentLeftOpExpIntType = isCurrentOpExpIntType;
             currentLeftOpExpIntType = currentOpExpIntType;
+
+
             binaryExpression.rightOperand.accept(this);
+            isCurrentRightOpExpIntType = isCurrentOpExpIntType;
             currentRightOpExpIntType = currentOpExpIntType;
 
             if(currentRightOpExpIntType != currentLeftOpExpIntType) {
                 binaryTypeMismatch(binaryExpression.operator, binaryExpression.leftOperand, binaryExpression.rightOperand);
             }
-            currentOpExpIntType = currentLeftOpExpIntType;
-            if(currentLeftOpExpIntType.byteSize != 4 || currentRightOpExpIntType.byteSize != 4){
+            isCurrentOpExpIntType = isCurrentLeftOpExpIntType;
+
+            if(!isCurrentOpExpIntType) {//if(currentLeftOpExpIntType.byteSize != 4 || currentRightOpExpIntType.byteSize != 4){
                 binaryTypeMismatch(binaryExpression.operator, currentLeftOpExpIntType, currentRightOpExpIntType);
             }
+            currentOpExpIntType = currentRightOpExpIntType;
         }
 
         @Override
         public void visit(UnaryExpression unaryExpression) {
             unaryExpression.operand.accept(this);
-            if(currentOpExpIntType.byteSize != 4) {
+            if(calculateTypeSize(currentOpExpIntType) != 0) {
                 unaryTypeMismatch(unaryExpression.operator, currentOpExpIntType);
             }
         }
@@ -149,8 +155,8 @@ public class ProcedureBodyChecker {
                 this.currentArraySimpleVar = namedVariable;
             }
 
-            isCurrentOpExpIntType = calculateTypeSize(((VariableEntry) entry).type) == 0;
-            currentOpExpIntType = calculateTypeSize(((VariableEntry) entry).type) == 0 ? ((VariableEntry) entry).type : currentOpExpIntType;
+            isCurrentOpExpIntType = calculateTypeSize(variableEntry.type) == 0;
+            currentOpExpIntType = calculateTypeSize(variableEntry.type) == 0 ? variableEntry.type : currentOpExpIntType;
         }
 
         @Override
@@ -177,7 +183,7 @@ public class ProcedureBodyChecker {
                     invalidArrayAccess(entry.type);
                 }
                 isCurrentOpExpIntType = true;
-                currentOpExpIntType =  PrimitiveType.intType;
+                currentOpExpIntType = entry.type;
             }
 
             if(assignStmFlag){
@@ -312,8 +318,8 @@ public class ProcedureBodyChecker {
             this.currentRow = ifStatement.position.line;
 
             ifStatement.condition.accept(this);
-            ifStatement.thenPart.accept(this);
             ifStatement.elsePart.accept(this);
+            ifStatement.thenPart.accept(this);
         }
 
         @Override
