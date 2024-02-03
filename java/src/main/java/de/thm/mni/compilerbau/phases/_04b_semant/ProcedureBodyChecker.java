@@ -179,6 +179,7 @@ public class ProcedureBodyChecker {
             if(variableExpression.variable instanceof ArrayAccess) {
                 int size = calculateTypeSize(entry.type);
                 if(size != currentArrayType) {
+                    //TODO: Error here!
                     invalidArrayAccess(entry.type);
                 }
                 isCurrentOpExpIntType = true;
