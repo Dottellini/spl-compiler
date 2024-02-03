@@ -129,19 +129,19 @@ public class ProcedureBodyChecker {
 
         @Override
         public void visit(NamedVariable namedVariable) {
-            Entry entry = globalTable.lookup(namedVariable.name);
+            Entry entry = localTable.lookup(namedVariable.name);
 
             if(entry == null) undefinedIdentifier(namedVariable.name, namedVariable.position);
 
             VariableEntry variableEntry = (VariableEntry) entry;
             assert variableEntry != null;
-            if(variableEntry.type.byteSize == 4) {
+            if(calculateTypeSize(variableEntry.type) == 0) {
                 this.currentNamedVar = namedVariable;
             } else {
                 if(rightSideOfAssign && assignLeftArray && currentArrayType == 0) {
                     indexTypeMismatch(variableEntry.type);
                 }
-                if(currentArrayType > variableEntry.type.byteSize) {
+                if(currentArrayType > calculateTypeSize(variableEntry.type)) {
                     invalidArrayAccess(variableEntry.type);
                 }
 
@@ -149,8 +149,8 @@ public class ProcedureBodyChecker {
                 this.currentArraySimpleVar = namedVariable;
             }
 
-            isCurrentOpExpIntType = ((VariableEntry) entry).type.byteSize == 4;
-            currentOpExpIntType = ((VariableEntry) entry).type;
+            isCurrentOpExpIntType = calculateTypeSize(((VariableEntry) entry).type) == 0;
+            currentOpExpIntType = calculateTypeSize(((VariableEntry) entry).type) == 0 ? ((VariableEntry) entry).type : currentOpExpIntType;
         }
 
         @Override
@@ -167,12 +167,12 @@ public class ProcedureBodyChecker {
                 previousArrayType = currentArrayType;
                 currentArrayType = 0;
             }
-
             variableExpression.variable.accept(this);
+            //TODO currentArraySimpleVar is null
             VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
 
             if(variableExpression.variable instanceof ArrayAccess) {
-                int size = entry.type.byteSize;
+                int size = calculateTypeSize(entry.type);
                 if(size != currentArrayType) {
                     invalidArrayAccess(entry.type);
                 }
@@ -182,7 +182,7 @@ public class ProcedureBodyChecker {
 
             if(assignStmFlag){
                 if(variableExpression.variable instanceof ArrayAccess && !assignLeftArray){
-                    int currentType = entry.type.byteSize;
+                    int currentType = calculateTypeSize(entry.type);
 
                     if(leftTypeOfAssign != (currentArrayType - currentType)){
                         assignmentTypeMismatch(entry.type, PrimitiveType.intType);
@@ -233,7 +233,7 @@ public class ProcedureBodyChecker {
                             int paramSize = p.type.byteSize;
                             exp.variable.accept(this);
                             VariableEntry varEntry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
-                            int entrySize = varEntry.type.byteSize;
+                            int entrySize = calculateTypeSize(varEntry.type);
                             if(entrySize - currentArrayType != paramSize) {
                                 argumentTypeMismatch(callStatement.procedureName, pos, varEntry.type, p.type);
                             }
@@ -262,7 +262,7 @@ public class ProcedureBodyChecker {
                 leftArrayWithoutIndex = true;
             } else if(assignStatement.target instanceof ArrayAccess && currentArraySimpleVar != null){
                 VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
-                int size = entry.type.byteSize;
+                int size = calculateTypeSize(entry.type);
                 if(currentArrayType > size){
                     invalidArrayAccess(entry.type);
                 }
@@ -271,7 +271,7 @@ public class ProcedureBodyChecker {
             if(assignStatement.target instanceof ArrayAccess){
                 assert currentArraySimpleVar != null;
                 VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
-                int size = entry.type.byteSize;
+                int size = calculateTypeSize(entry.type);
                 if(currentArrayType > size && assignStmFlag || size != currentArrayType  && !assignStmFlag || currentArraySimpleVar == null){
                     invalidArrayAccess(entry.type);
                 }
@@ -283,7 +283,7 @@ public class ProcedureBodyChecker {
             }else{
                 if(assignLeftArray){
                     VariableEntry entry = (VariableEntry) (localTable.lookup(currentArraySimpleVar.name));
-                    int size = entry.type.byteSize;
+                    int size = calculateTypeSize(entry.type);
                     leftArraySize = size;
                     leftTypeOfAssign = size;
                 }else{
@@ -409,6 +409,21 @@ public class ProcedureBodyChecker {
         static void mainMustNotHaveParameters() {
             System.err.println("Procedure 'main' must not have any parameters");
             System.exit(127);
+        }
+
+        private int calculateTypeSize(Type type) {
+            int size = 1;
+
+            if(type instanceof PrimitiveType){
+                return 0;
+            }else if(type instanceof ArrayType){
+                Type arrayType = type;
+                while(!(((ArrayType)arrayType).baseType instanceof PrimitiveType)){
+                    arrayType = ((ArrayType)arrayType).baseType;
+                    size++;
+                }
+            }
+            return size;
         }
 
     }
