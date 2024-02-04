@@ -18,6 +18,10 @@ import java.util.stream.IntStream;
  */
 public class VarAllocator {
     public static final int REFERENCE_BYTESIZE = 4;
+    SymbolTable globalTable;
+    boolean showVarAlloc;
+    ProcedureEntry currentProcedure;
+    ArrayList<String> predefinedProcedures;
 
     private final CommandLineOptions options;
 
@@ -29,12 +33,13 @@ public class VarAllocator {
     }
 
     public void allocVars(Program program, SymbolTable table) {
+        this.showVarAlloc = options.phaseOption == CommandLineOptions.PhaseOption.VARS;
         //TODO (assignment 5): Allocate stack slots for all parameters and local variables
+        this.globalTable = table;
+        this.predefinedProcedures = new ArrayList<>();
+        this.predefinedProcedures.addAll(List.of("printi", "printc", "readi", "readc", "exit", "time", "clearAll", "setPixel", "drawLine", "drawCircle"));
 
-        throw new NotImplemented();
-
-        //TODO: Uncomment this when the above exception is removed!
-        //if (showVarAlloc) formatVars(program, table);
+        if (showVarAlloc) formatVars(program, table);
     }
 
     /**
