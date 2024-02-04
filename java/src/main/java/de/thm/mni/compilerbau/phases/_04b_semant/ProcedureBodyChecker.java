@@ -180,7 +180,7 @@ public class ProcedureBodyChecker {
             }
 
             switch (binaryExpression.operator) {
-                case BinaryExpression.Operator.EQU:    // case fall-through, following cases same type
+                case BinaryExpression.Operator.EQU:
                 case BinaryExpression.Operator.NEQ:
                 case BinaryExpression.Operator.LST:
                 case BinaryExpression.Operator.LSE:
@@ -191,7 +191,7 @@ public class ProcedureBodyChecker {
                     }
                     type = PrimitiveType.boolType;
                     break;
-                case BinaryExpression.Operator.ADD:    // case fall-through, following cases same type
+                case BinaryExpression.Operator.ADD:
                 case BinaryExpression.Operator.SUB:
                 case BinaryExpression.Operator.MUL:
                 case BinaryExpression.Operator.DIV:
@@ -280,7 +280,6 @@ public class ProcedureBodyChecker {
             System.err.println("Argument type mismatch in call of procedure '" + procedure + "'. Argument " + argNum + " is expected to have type '" + expectedArgType + "', but has type '" + givenArgType + "'.");
             System.exit(114);
         }
-        //TODO: Implement this error
         static void refArgMustBeVariable(Identifier procedure, int argNum) {
             System.err.println("Invalid argument for reference parameter in call to procedure '" + procedure + "': Argument " + argNum + " must be a variable.");
             System.exit(115);
