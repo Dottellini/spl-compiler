@@ -2,6 +2,7 @@ package de.thm.mni.compilerbau.phases._05_varalloc;
 
 import de.thm.mni.compilerbau.CommandLineOptions;
 import de.thm.mni.compilerbau.absyn.*;
+import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
 import de.thm.mni.compilerbau.table.ParameterType;
 import de.thm.mni.compilerbau.table.ProcedureEntry;
 import de.thm.mni.compilerbau.table.SymbolTable;
@@ -40,6 +41,36 @@ public class VarAllocator {
         this.predefinedProcedures.addAll(List.of("printi", "printc", "readi", "readc", "exit", "time", "clearAll", "setPixel", "drawLine", "drawCircle"));
 
         if (showVarAlloc) formatVars(program, table);
+    }
+
+    /*private void calculateParameterOffset(ProcedureEntry entry) {
+
+        int size = 0;
+
+        for(ParameterType p: entry.parameterTypes) {
+            if(p.isReference) {
+                p.offset = size;
+                size += REFERENCE_BYTESIZE;
+            } else {
+                p.offset = size;
+                size += p.type.byteSize;
+            }
+        }
+        entry.argumentAreaSize = size;
+    }*/
+
+
+    class AllocatorVisitor extends DoNothingVisitor {
+        SymbolTable globalTable;
+
+        AllocatorVisitor(SymbolTable globalTable) {
+            this.globalTable = globalTable;
+        }
+        @Override
+        public void visit(Program program) {
+            program.definitions.stream().filter(d -> d instanceof ProcedureDefinition).forEach(p -> p.accept(this));
+        }
+
     }
 
     /**
