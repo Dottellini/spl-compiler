@@ -49,23 +49,6 @@ public class VarAllocator {
         if (showVarAlloc) formatVars(program, table);
     }
 
-    /*private void calculateParameterOffset(ProcedureEntry entry) {
-
-        int size = 0;
-
-        for(ParameterType p: entry.parameterTypes) {
-            if(p.isReference) {
-                p.offset = size;
-                size += REFERENCE_BYTESIZE;
-            } else {
-                p.offset = size;
-                size += p.type.byteSize;
-            }
-        }
-        entry.argumentAreaSize = size;
-    }*/
-
-
     class AllocatorVisitor extends DoNothingVisitor {
         SymbolTable globalTable;
         SymbolTable localTable;
@@ -97,9 +80,9 @@ public class VarAllocator {
             ProcedureEntry entry = (ProcedureEntry) globalTable.lookup(procedureDefinition.name);
             this.localTable = entry.localTable;
             int size = 0;
-
+            entry.stackLayout.argumentAreaSize = 0;
             for(ParameterType p: entry.parameterTypes) {
-                p.offset = entry.argumentAreaSize;
+                p.offset = entry.stackLayout.argumentAreaSize;
                 valueOffsetList.add(p.offset);
 
                 if(p.isReference) {
@@ -108,7 +91,7 @@ public class VarAllocator {
                     size = p.type.byteSize;
                 }
 
-                entry.argumentAreaSize += size;
+                entry.stackLayout.argumentAreaSize += size;
             }
 
             procedureDefinition.parameters.forEach(p -> {
@@ -121,7 +104,7 @@ public class VarAllocator {
                 v.accept(this);
             });
             resultSize *= (-1);
-            entry.variableAreaSize = resultSize;
+            entry.stackLayout.localVarAreaSize = resultSize;
         }
 
         public void visit(VariableDefinition variableDefinition) {
@@ -150,15 +133,22 @@ public class VarAllocator {
         }
 
         public void visit(ProcedureDefinition procedureDefinition) {
+            ProcedureEntry procedureEntry = (ProcedureEntry) globalTable.lookup(procedureDefinition.name);
             this.counter = 0;
             this.callStatementSize = 0;
             procedureDefinition.body.forEach(s -> s.accept(this));
+
+            if(this.counter != 0) {
+                procedureEntry.stackLayout.outgoingAreaSize = this.callStatementSize;
+            } else {
+                procedureEntry.stackLayout.outgoingAreaSize = -1;
+            }
         }
 
         public void visit(CallStatement callStatement) {
             this.counter++;
             Entry entry = globalTable.lookup(callStatement.procedureName);
-            int size = ((ProcedureEntry) entry).argumentAreaSize;
+            int size = ((ProcedureEntry) entry).stackLayout.argumentAreaSize;
             if(this.callStatementSize < size && size != 0) {
                 this.callStatementSize = size;
             }

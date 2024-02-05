@@ -16,9 +16,7 @@ public class StackLayout {
      * @return The total size of the stack frame described by this object.
      */
     public int frameSize() {
-        //TODO (assignment 5): Calculate the size of the stack frame
-
-        throw new NotImplemented();
+        return localVarAreaSize + outgoingAreaSize + 8; //8 sind noch oldFP und oldReturnAddress
     }
 
     /**
@@ -26,8 +24,7 @@ public class StackLayout {
      */
     public int oldFramePointerOffset() {
         //TODO (assignment 5): Calculate the offset of the old frame pointer
-
-        throw new NotImplemented();
+        return outgoingAreaSize + 4;
     }
 
     /**
@@ -35,7 +32,6 @@ public class StackLayout {
      */
     public int oldReturnAddressOffset() {
         //TODO (assignment 5): Calculate the offset of the old return address
-
-        throw new NotImplemented();
+        return -localVarAreaSize - 8;
     }
 }
