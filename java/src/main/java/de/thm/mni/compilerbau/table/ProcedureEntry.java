@@ -13,6 +13,8 @@ public class ProcedureEntry implements Entry {
     public final SymbolTable localTable;
     public final List<ParameterType> parameterTypes;
     public final StackLayout stackLayout = new StackLayout();
+    public int argumentAreaSize = 0;
+    public int variableAreaSize = 0;
 
     /**
      * Creates a new {@link Entry} representing a declared SPL procedure.

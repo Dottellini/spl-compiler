@@ -3,11 +3,10 @@ package de.thm.mni.compilerbau.phases._05_varalloc;
 import de.thm.mni.compilerbau.CommandLineOptions;
 import de.thm.mni.compilerbau.absyn.*;
 import de.thm.mni.compilerbau.absyn.visitor.DoNothingVisitor;
-import de.thm.mni.compilerbau.table.ParameterType;
-import de.thm.mni.compilerbau.table.ProcedureEntry;
-import de.thm.mni.compilerbau.table.SymbolTable;
-import de.thm.mni.compilerbau.table.VariableEntry;
+import de.thm.mni.compilerbau.absyn.visitor.Visitor;
+import de.thm.mni.compilerbau.table.*;
 import de.thm.mni.compilerbau.utils.*;
+import java_cup.runtime.Symbol;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -21,8 +20,9 @@ public class VarAllocator {
     public static final int REFERENCE_BYTESIZE = 4;
     SymbolTable globalTable;
     boolean showVarAlloc;
-    ProcedureEntry currentProcedure;
     ArrayList<String> predefinedProcedures;
+    int listIndex;
+    int resultSize;
 
     private final CommandLineOptions options;
 
@@ -39,6 +39,12 @@ public class VarAllocator {
         this.globalTable = table;
         this.predefinedProcedures = new ArrayList<>();
         this.predefinedProcedures.addAll(List.of("printi", "printc", "readi", "readc", "exit", "time", "clearAll", "setPixel", "drawLine", "drawCircle"));
+
+        Visitor firstRoundVisitor = new AllocatorVisitor(table);
+        program.accept(firstRoundVisitor);
+
+        Visitor secondRoundVisitor = new AllocatorVisitorSecondIteration(table);
+        program.accept(secondRoundVisitor);
 
         if (showVarAlloc) formatVars(program, table);
     }
@@ -62,14 +68,116 @@ public class VarAllocator {
 
     class AllocatorVisitor extends DoNothingVisitor {
         SymbolTable globalTable;
+        SymbolTable localTable;
+        ArrayList<Integer> valueOffsetList;
 
         AllocatorVisitor(SymbolTable globalTable) {
+            this.valueOffsetList = new ArrayList<>();
             this.globalTable = globalTable;
         }
         @Override
         public void visit(Program program) {
             program.definitions.stream().filter(d -> d instanceof ProcedureDefinition).forEach(p -> p.accept(this));
         }
+
+        public void visit(IfStatement ifStatement) {
+            ifStatement.thenPart.accept(this);
+            ifStatement.elsePart.accept(this);
+        }
+
+        public void visit(WhileStatement whileStatement) {
+            whileStatement.body.accept(this);
+        }
+
+        public void visit(CallStatement callStatement) {
+
+        }
+
+        public void visit(ProcedureDefinition procedureDefinition) {
+            ProcedureEntry entry = (ProcedureEntry) globalTable.lookup(procedureDefinition.name);
+            this.localTable = entry.localTable;
+            int size = 0;
+
+            for(ParameterType p: entry.parameterTypes) {
+                p.offset = entry.argumentAreaSize;
+                valueOffsetList.add(p.offset);
+
+                if(p.isReference) {
+                    size = REFERENCE_BYTESIZE;
+                } else {
+                    size = p.type.byteSize;
+                }
+
+                entry.argumentAreaSize += size;
+            }
+
+            procedureDefinition.parameters.forEach(p -> {
+                p.accept(this);
+                listIndex++;
+            });
+
+            resultSize = 0;
+            procedureDefinition.variables.forEach(v -> {
+                v.accept(this);
+            });
+            resultSize *= (-1);
+            entry.variableAreaSize = resultSize;
+        }
+
+        public void visit(VariableDefinition variableDefinition) {
+            VariableEntry entry = (VariableEntry) localTable.lookup(variableDefinition.name);
+            resultSize -= entry.type.byteSize;
+            entry.offset = resultSize;
+        }
+
+        public void visit(ParameterDefinition parameterDefinition) {
+            VariableEntry entry = (VariableEntry) localTable.lookup(parameterDefinition.name);
+            entry.offset = valueOffsetList.get(listIndex);
+        }
+    }
+
+    private class AllocatorVisitorSecondIteration extends DoNothingVisitor {
+        SymbolTable globalTable;
+        int callStatementSize = 0;
+        int counter = 0;
+
+        AllocatorVisitorSecondIteration(SymbolTable globalTable) {
+            this.globalTable = globalTable;
+        }
+
+        public void visit(Program program) {
+            program.definitions.forEach(p -> p.accept(this));
+        }
+
+        public void visit(ProcedureDefinition procedureDefinition) {
+            this.counter = 0;
+            this.callStatementSize = 0;
+            procedureDefinition.body.forEach(s -> s.accept(this));
+        }
+
+        public void visit(CallStatement callStatement) {
+            this.counter++;
+            Entry entry = globalTable.lookup(callStatement.procedureName);
+            int size = ((ProcedureEntry) entry).argumentAreaSize;
+            if(this.callStatementSize < size && size != 0) {
+                this.callStatementSize = size;
+            }
+        }
+
+        public void visit(IfStatement ifStatement) {
+            ifStatement.thenPart.accept(this);
+            ifStatement.elsePart.accept(this);
+        }
+
+        public void visit(WhileStatement whileStatement) {
+            whileStatement.body.accept(this);
+        }
+
+        public void visit(CompoundStatement compoundStatement) {
+            compoundStatement.statements.forEach(s -> s.accept(this));
+        }
+
+
 
     }
 
