@@ -74,6 +74,10 @@ public class ProcedureBodyChecker {
                     .filter(Objects::nonNull)
                     .forEach(s -> s.accept(this));
 
+            procedureDefinition.variables.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(s -> s.accept(this));
+
             procedureDefinition.body.stream()
                     .filter(Objects::nonNull)
                     .forEach(s -> s.accept(this));
@@ -117,7 +121,7 @@ public class ProcedureBodyChecker {
                 indexTypeMismatch(this.type);
             }
             arrayAccess.array.accept(this);
-            arrayAccess.dataType = this.type;
+            arrayAccess.dataType = type;
             if(!(this.type instanceof ArrayType)) {
                 invalidArrayAccess(this.type);
             }

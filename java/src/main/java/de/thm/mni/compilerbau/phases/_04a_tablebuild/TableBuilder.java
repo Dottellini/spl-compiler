@@ -76,7 +76,7 @@ public class TableBuilder {
             }
 
             typeDef.typeExpression.accept(this);
-            globalTable.enter(typeDef.name, new TypeEntry(type)); //TODO: You could add an SplError Object to be thrown
+            globalTable.enter(typeDef.name, new TypeEntry(type), SplError.RedefinitionOfIdentifier(typeDef.position, typeDef.name)); //TODO: You could add an SplError Object to be thrown
         }
 
         public void visit(ArrayTypeExpression arrType) {
@@ -86,10 +86,14 @@ public class TableBuilder {
 
         public void visit(NamedTypeExpression nameType) {
             Entry entry = globalTable.lookup(nameType.name);
+            if(entry == null) {
+                throw SplError.UndefinedIdentifier(nameType.position, nameType.name);
+            }
 
-            if(entry instanceof VariableEntry){
-                type = ((VariableEntry) entry).type;
-            }else if(entry instanceof TypeEntry){
+            if(entry != null && entry instanceof VariableEntry){
+                System.err.println("Identifier '" + nameType.name + "' does not refer to a variable.");
+                System.exit(122);
+            }else if(entry != null && entry instanceof TypeEntry){
                 type = ((TypeEntry) entry).type;
             }else{
                 System.err.println("Identifier '" + nameType.name + "' does not refer to a type.");
@@ -135,7 +139,7 @@ public class TableBuilder {
 
             List<Statement> sList = procDef.body;
             for(Statement s: sList) {
-                s.accept(this); //TODO: Visit method for statement
+                s.accept(this);
             }
 
             //Prüft Regel 4 aus dem Compilerbau Buch
@@ -148,7 +152,7 @@ public class TableBuilder {
 
             //Add entry to global table
             ProcedureEntry procEntry = new ProcedureEntry(currentTable, paramTypeList);
-            globalTable.enter(procDef.name, procEntry);
+            globalTable.enter(procDef.name, procEntry, SplError.RedefinitionOfIdentifier(procDef.position, procDef.name));
 
             tableMapForPrinting.put(procDef.name, procEntry);
         }
