@@ -184,21 +184,21 @@ public class ProcedureBodyChecker {
             }
 
             switch (binaryExpression.operator) {
-                case BinaryExpression.Operator.EQU:
-                case BinaryExpression.Operator.NEQ:
-                case BinaryExpression.Operator.LST:
-                case BinaryExpression.Operator.LSE:
-                case BinaryExpression.Operator.GRT:
-                case BinaryExpression.Operator.GRE:
+                case EQU:
+                case NEQ:
+                case LST:
+                case LSE:
+                case GRT:
+                case GRE:
                     if (left != PrimitiveType.intType) {
                         binaryTypeMismatch(binaryExpression.operator, left, right);
                     }
                     type = PrimitiveType.boolType;
                     break;
-                case BinaryExpression.Operator.ADD:
-                case BinaryExpression.Operator.SUB:
-                case BinaryExpression.Operator.MUL:
-                case BinaryExpression.Operator.DIV:
+                case ADD:
+                case SUB:
+                case MUL:
+                case DIV:
                     if (left != PrimitiveType.intType) {
                         binaryTypeMismatch(binaryExpression.operator, left, right);
                     }
@@ -214,7 +214,7 @@ public class ProcedureBodyChecker {
             Type operandType = this.type;
 
             switch (unaryExpression.operator) {
-                case UnaryExpression.Operator.MINUS:
+                case MINUS:
                     if (operandType != PrimitiveType.intType) {
                         unaryTypeMismatch(unaryExpression.operator, operandType);
                     }

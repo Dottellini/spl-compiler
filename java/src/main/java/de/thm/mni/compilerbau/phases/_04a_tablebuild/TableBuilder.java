@@ -91,8 +91,7 @@ public class TableBuilder {
             }
 
             if(entry != null && entry instanceof VariableEntry){
-                System.err.println("Identifier '" + nameType.name + "' does not refer to a variable.");
-                System.exit(122);
+                type = ((VariableEntry) entry).type;
             }else if(entry != null && entry instanceof TypeEntry){
                 type = ((TypeEntry) entry).type;
             }else{
@@ -103,10 +102,15 @@ public class TableBuilder {
 
         public void visit(VariableDefinition varDef) {
             //Check if variable was already created with that name
-            if(globalTable.lookup(varDef.name) != null){
+            Entry entry = globalTable.lookup(varDef.name);
+            if(entry != null){
                 System.err.println("Identifier '" + varDef.name + "' is already defined in this scope.");
                 System.exit(103);
+            } else if (entry == null) {
+                System.err.println("Identifier '" + varDef.name + "' does not refer to a variable.");
+                System.exit(122);
             }
+
             varDef.typeExpression.accept(this);
             currentTable.enter(varDef.name, new VariableEntry(type, false));
         }
