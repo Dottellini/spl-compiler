@@ -106,8 +106,9 @@ public class ProcedureBodyChecker {
 
             if(entry instanceof VariableEntry) {
                 this.type = ((VariableEntry) entry).type;
+                namedVariable.dataType = this.type;
             } else {
-                identifierNotRefered(namedVariable.name);
+                identNotaVariable(namedVariable.name);
             }
         }
 

@@ -90,9 +90,10 @@ public class TableBuilder {
                 throw SplError.UndefinedIdentifier(nameType.position, nameType.name);
             }
 
-            if(entry != null && entry instanceof VariableEntry){
+            /*if(entry instanceof VariableEntry){
                 type = ((VariableEntry) entry).type;
-            }else if(entry != null && entry instanceof TypeEntry){
+            }else */
+            if(entry instanceof TypeEntry){
                 type = ((TypeEntry) entry).type;
             }else{
                 System.err.println("Identifier '" + nameType.name + "' does not refer to a type.");
@@ -102,13 +103,10 @@ public class TableBuilder {
 
         public void visit(VariableDefinition varDef) {
             //Check if variable was already created with that name
-            Entry entry = globalTable.lookup(varDef.name);
-            if(entry != null){
+            Entry entry = currentTable.lookup(varDef.name);
+            if(entry instanceof VariableEntry){
                 System.err.println("Identifier '" + varDef.name + "' is already defined in this scope.");
                 System.exit(103);
-            } else if (entry == null) {
-                System.err.println("Identifier '" + varDef.name + "' does not refer to a variable.");
-                System.exit(122);
             }
 
             varDef.typeExpression.accept(this);

@@ -45,8 +45,8 @@ public class CodeGenerator {
         SymbolTable globalTable;
         SymbolTable localTable;
         Register currentRegister;
-        Type currentArrayType;
         String label;
+        Type currentArrayType;
         int labelCount = 0;
 
         CodeGeneratorVisitor(SymbolTable globalTable) {
@@ -89,15 +89,21 @@ public class CodeGenerator {
                 output.emitInstruction("ldw", currentRegister, currentRegister, 0);
             }
 
-            if(entry.type instanceof ArrayType) {
-                this.currentArrayType = entry.type;
-            }
-
             this.currentRegister = currentRegister.next();
         }
         public void visit(VariableExpression variableExpression) {
             variableExpression.variable.accept(this);
             output.emitInstruction("ldw", currentRegister.previous(), currentRegister.previous(), 0);
+        }
+
+        public void visit(UnaryExpression unaryExpression) {
+            unaryExpression.operand.accept(this);
+
+            switch (unaryExpression.operator) {
+                case UnaryExpression.Operator.MINUS:
+                    output.emitInstruction("sub", currentRegister, Register.NULL, currentRegister);
+                    break;
+            }
         }
 
         public void visit(BinaryExpression binaryExpression) {
@@ -121,22 +127,22 @@ public class CodeGenerator {
                     output.emitInstruction("div", left, left, right);
                     break;
                 case BinaryExpression.Operator.EQU:
-                    output.emitInstruction("beq", left, left, right);
+                    output.emitInstruction("beq", left, right, label);
                     break;
                 case BinaryExpression.Operator.NEQ:
-                    output.emitInstruction("bne", left, left, right);
+                    output.emitInstruction("bne", left, right, label);
                     break;
                 case BinaryExpression.Operator.LST:
-                    output.emitInstruction("blt", left, left, right);
+                    output.emitInstruction("blt", left, right, label);
                     break;
                 case BinaryExpression.Operator.LSE:
-                    output.emitInstruction("ble", left, left, right);
+                    output.emitInstruction("ble", left, right, label);
                     break;
                 case BinaryExpression.Operator.GRT:
-                    output.emitInstruction("bgt", left, left, right);
+                    output.emitInstruction("bgt", left, right, label);
                     break;
                 case BinaryExpression.Operator.GRE:
-                    output.emitInstruction("bge", left, left, right);
+                    output.emitInstruction("bge", left, right, label);
                     break;
                 case BinaryExpression.Operator.AND:
                     output.emitInstruction("and", left, left, right);
@@ -146,7 +152,7 @@ public class CodeGenerator {
                     break;
             }
 
-            this.currentRegister = right;
+            this.currentRegister = currentRegister.previous();
         }
 
         public void visit (AssignStatement assignStatement) {
@@ -159,44 +165,71 @@ public class CodeGenerator {
         public void visit(ArrayAccess arrayAccess) {
             arrayAccess.array.accept(this);
             arrayAccess.index.accept(this);
-            output.emitInstruction("add", currentRegister, Register.NULL, this.currentArrayType.byteSize);
+            System.out.println(arrayAccess);
+
+            output.emitInstruction("add", currentRegister, Register.NULL, ((ArrayType)arrayAccess.array.dataType).arraySize);
             this.currentRegister = currentRegister.previous();
 
             output.emitInstruction("bgeu", currentRegister, currentRegister.next(), "_indexError");
-            output.emitInstruction("mul", currentRegister, currentRegister, this.currentArrayType.byteSize);
+            output.emitInstruction("mul", currentRegister, currentRegister, arrayAccess.dataType.byteSize);
             output.emitInstruction("add", currentRegister.previous(), currentRegister.previous(), currentRegister);
+
         }
 
         public void visit(WhileStatement whileStatement) {
+            String test = labelGenerator();
             String loop = labelGenerator();
             String end = labelGenerator();
 
-            output.emitLabel(loop);
+            label = loop;
+            output.emitLabel(test);
 
             whileStatement.condition.accept(this);
 
-            output.emitInstruction("bne", currentRegister, currentRegister.next(), end);
+            output.emitInstruction("j", end);
+            output.emitLabel(loop);
+
+            whileStatement.body.accept(this);
+
+            output.emitInstruction("j", test);
+            output.emitLabel(end);
+
+            /*
+            output.emitInstruction("bge", currentRegister, currentRegister.next(), end);
 
             this.currentRegister = currentRegister.previous();
             whileStatement.body.accept(this);
 
             output.emitInstruction("j", loop);
-            output.emitLabel(end);
+            output.emitLabel(end);*/
         }
 
         public void visit(IfStatement ifStatement) {
             String elseLabel = labelGenerator();
             String endLabel = labelGenerator();
+            label = elseLabel;
 
             ifStatement.condition.accept(this);
-            output.emitInstruction("bne", currentRegister, currentRegister.next(), elseLabel);
+
+            if(ifStatement.elsePart != null) {
+                ifStatement.elsePart.accept(this);
+            }
+
+            output.emitInstruction("j", endLabel);
+            output.emitLabel(elseLabel);
+
+            ifStatement.thenPart.accept(this);
+            output.emitLabel(endLabel);
+/*
+            ifStatement.condition.accept(this);
+            output.emitInstruction("bge", currentRegister, currentRegister.next(), elseLabel);
 
             this.currentRegister = currentRegister.previous();
             ifStatement.thenPart.accept(this);
             output.emitInstruction("j", endLabel);
             output.emitLabel(elseLabel);
             ifStatement.elsePart.accept(this);
-            output.emitLabel(endLabel);
+            output.emitLabel(endLabel);*/
         }
 
         public void visit(CallStatement callStatement) {
@@ -233,11 +266,11 @@ public class CodeGenerator {
             this.localTable = procedureEntry.localTable;
             this.label = procedureDefinition.name.toString();
 
-            output.emit("");
+            //output.emit("");
             output.emitExport(label);
             output.emitLabel(label);
 
-            /* Prolog */
+            // Prolog
             //Calculate FrameSize to allocate Frame
             frameSize = procedureEntry.stackLayout.localVarAreaSize + frameByteSize + returnByteSize;
             frameSize += (procedureEntry.stackLayout.outgoingAreaSize < 0) ? 0 : procedureEntry.stackLayout.outgoingAreaSize;
@@ -255,13 +288,13 @@ public class CodeGenerator {
             oldReturnOffset = procedureEntry.stackLayout.localVarAreaSize + frameByteSize + returnByteSize;
             output.emitInstruction("stw", Register.RETURN_ADDRESS, Register.FRAME_POINTER, -oldReturnOffset);
 
-            /* Body */
-            procedureDefinition.parameters.forEach(parameter -> parameter.accept(this));
-            procedureDefinition.variables.forEach(variable -> variable.accept(this));
+            // Body
+            //procedureDefinition.parameters.forEach(parameter -> parameter.accept(this));
+            //procedureDefinition.variables.forEach(variable -> variable.accept(this));
             procedureDefinition.body.forEach(statement -> statement.accept(this));
 
-            /* Epilog */
-            if(procedureEntry.stackLayout.outgoingAreaSize > 0) {
+            // Epilog
+            if(procedureEntry.stackLayout.outgoingAreaSize >= 0) {
                 output.emitInstruction("ldw", Register.RETURN_ADDRESS, Register.FRAME_POINTER, -oldReturnOffset);
             }
             output.emitInstruction("ldw", Register.FRAME_POINTER, Register.STACK_POINTER, oldFrameOffset);
