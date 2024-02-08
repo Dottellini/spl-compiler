@@ -90,9 +90,6 @@ public class TableBuilder {
                 throw SplError.UndefinedIdentifier(nameType.position, nameType.name);
             }
 
-            /*if(entry instanceof VariableEntry){
-                type = ((VariableEntry) entry).type;
-            }else */
             if(entry instanceof TypeEntry){
                 type = ((TypeEntry) entry).type;
             }else{

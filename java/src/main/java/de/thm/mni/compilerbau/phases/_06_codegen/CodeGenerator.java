@@ -165,7 +165,6 @@ public class CodeGenerator {
         public void visit(ArrayAccess arrayAccess) {
             arrayAccess.array.accept(this);
             arrayAccess.index.accept(this);
-            System.out.println(arrayAccess);
 
             output.emitInstruction("add", currentRegister, Register.NULL, ((ArrayType)arrayAccess.array.dataType).arraySize);
             this.currentRegister = currentRegister.previous();
@@ -193,15 +192,6 @@ public class CodeGenerator {
 
             output.emitInstruction("j", test);
             output.emitLabel(end);
-
-            /*
-            output.emitInstruction("bge", currentRegister, currentRegister.next(), end);
-
-            this.currentRegister = currentRegister.previous();
-            whileStatement.body.accept(this);
-
-            output.emitInstruction("j", loop);
-            output.emitLabel(end);*/
         }
 
         public void visit(IfStatement ifStatement) {
@@ -220,16 +210,6 @@ public class CodeGenerator {
 
             ifStatement.thenPart.accept(this);
             output.emitLabel(endLabel);
-/*
-            ifStatement.condition.accept(this);
-            output.emitInstruction("bge", currentRegister, currentRegister.next(), elseLabel);
-
-            this.currentRegister = currentRegister.previous();
-            ifStatement.thenPart.accept(this);
-            output.emitInstruction("j", endLabel);
-            output.emitLabel(elseLabel);
-            ifStatement.elsePart.accept(this);
-            output.emitLabel(endLabel);*/
         }
 
         public void visit(CallStatement callStatement) {
@@ -289,8 +269,6 @@ public class CodeGenerator {
             output.emitInstruction("stw", Register.RETURN_ADDRESS, Register.FRAME_POINTER, -oldReturnOffset);
 
             // Body
-            //procedureDefinition.parameters.forEach(parameter -> parameter.accept(this));
-            //procedureDefinition.variables.forEach(variable -> variable.accept(this));
             procedureDefinition.body.forEach(statement -> statement.accept(this));
 
             // Epilog
